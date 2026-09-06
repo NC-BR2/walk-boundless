@@ -206,6 +206,7 @@ export function setupHoverAnnouncements() {
   });
 
   document.addEventListener('mouseenter', (e) => {
+    if (!(e.target instanceof Element)) return;
     const resultItem = e.target.closest('.result-item');
     if (resultItem) { const h3 = resultItem.querySelector('h3'); if (h3) speakHover(h3.textContent); }
     const stopItem = e.target.closest('.stop-item');
@@ -223,6 +224,7 @@ export function setupHoverAnnouncements() {
   }, true);
 
   document.addEventListener('focus', (e) => {
+    if (!(e.target instanceof Element)) return;
     const resultItem = e.target.closest('.result-item');
     if (resultItem) { const h3 = resultItem.querySelector('h3'); if (h3) speakHover(h3.textContent); }
     const stopItem = e.target.closest('.stop-item');
