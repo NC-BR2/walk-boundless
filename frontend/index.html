@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Walk Boundless - Transporte Público</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+
+<div id="app" role="application" aria-label="Walk Boundless - Transporte Público">
+
+  <div class="voice-indicator" id="voiceIndicator" aria-hidden="true"></div>
+
+  <!-- SPLASH -->
+  <div class="screen active" id="splash" role="region" aria-label="Pantalla de inicio">
+    <div class="splash-logo"><span style="font-size: 90px;">&#x1F6B6;</span></div>
+    <h1 class="splash-title">Walk Boundless</h1>
+    <p class="splash-sub">Transporte Público Accesible</p>
+    <button class="btn-big" id="btnEnter" aria-label="Entrar a la aplicación" data-announce="Ingresar a la aplicación">
+      <span class="icon">&#x25B6;</span><span>INGRESAR</span>
+    </button>
+  </div>
+
+  <!-- MENÚ -->
+  <div class="screen" id="menu" role="region" aria-label="Menú principal">
+    <div class="header">
+      <h1>&#x1F6B6; Walk Boundless</h1>
+      <button class="btn-icon" id="btnConfig" aria-label="Configuración" data-announce="Configuración">&#x2699;</button>
+    </div>
+    <div class="status-bar">&#x1F4CD; Macrocentro de Salta Capital</div>
+    <div class="menu-grid">
+      <div class="menu-item" data-target="lineas" role="button" tabindex="0" aria-label="Buscar líneas" data-announce="Líneas">
+        <span class="icon">&#x1F68C;</span><span class="label">LÍNEAS</span>
+      </div>
+      <div class="menu-item blue" data-target="paradas" role="button" tabindex="0" aria-label="Buscar paradas" data-announce="Paradas">
+        <span class="icon">&#x1F68F;</span><span class="label">PARADAS</span>
+      </div>
+      <div class="menu-item purple" data-target="rutas" role="button" tabindex="0" aria-label="Cómo llegar" data-announce="Cómo llegar">
+        <span class="icon">&#x1F5FA;</span><span class="label">CÓMO LLEGAR</span>
+      </div>
+      <div class="menu-item green" data-target="mapa" role="button" tabindex="0" aria-label="Mapa" data-announce="Mapa">
+        <span class="icon">&#x1F5FA;</span><span class="label">MAPA</span>
+      </div>
+      <div class="menu-item red" data-target="favoritos" role="button" tabindex="0" aria-label="Favoritos" data-announce="Favoritos">
+        <span class="icon">&#x2B50;</span><span class="label">FAVORITOS</span>
+      </div>
+      <div class="menu-item" style="background: var(--accent-orange); color: var(--text-dark);" data-target="ayuda" role="button" tabindex="0" aria-label="Ayuda" data-announce="Ayuda">
+        <span class="icon">&#x2753;</span><span class="label">AYUDA</span>
+      </div>
+    </div>
+    <button class="btn-big dark" id="btnVoiceTest" aria-label="Probar voz" data-announce="Probar voz">
+      <span class="icon">&#x1F50A;</span><span>PROBAR VOZ</span>
+    </button>
+  </div>
+
+  <!-- LÍNEAS -->
+  <div class="screen" id="lineas" role="region" aria-label="Buscar líneas">
+    <div class="header">
+      <button class="btn-icon" id="backFromLineas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68C; ¿Qué línea necesitás?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="filter-section">
+      <h3>Filtrar por:</h3>
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="numero" data-announce="Filtrar por número">&#x1F522; NÚMERO</button>
+        <button class="filter-btn" data-filter="ramal" data-announce="Filtrar por ramal">&#x1F524; RAMAL</button>
+      </div>
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="lineSearchInput" placeholder="Buscá tu línea..." aria-label="Buscar línea" data-announce="Campo de búsqueda de líneas">
+      <button class="mic-btn" id="micLineas" aria-label="Buscar por voz" data-announce="Buscar por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="lineResults"></div>
+  </div>
+
+  <!-- DETALLE LÍNEA -->
+  <div class="screen" id="lineaDetalle" role="region" aria-label="Detalle de línea">
+    <div class="header">
+      <button class="btn-icon" id="backFromLineaDetalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1 id="lineaDetalleTitle">Línea</h1>
+      <button class="fav-btn" id="btnFavLinea" aria-label="Favoritos" data-announce="Favoritos">&#x2606;</button>
+    </div>
+    <div class="alert-banner">Seleccioná una parada para ver su ubicación</div>
+    <div class="results-list" id="lineaParadasList"></div>
+  </div>
+
+  <!-- PARADAS -->
+  <div class="screen" id="paradas" role="region" aria-label="Buscar paradas">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68F; ¿En qué calle estás?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="filter-section">
+      <h3>Filtrar por inicial:</h3>
+      <div class="alphabet-filter" id="alphabetFilter"></div>
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="calleSearchInput" placeholder="Buscá tu calle..." aria-label="Buscar calle" data-announce="Campo de búsqueda de calles">
+      <button class="mic-btn" id="micParadas" aria-label="Buscar por voz" data-announce="Buscar por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="calleResults"></div>
+  </div>
+
+  <!-- PARADAS EN CALLE -->
+  <div class="screen" id="paradasCalle" role="region" aria-label="Paradas en calle">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadasCalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1 id="calleTitle">Calle</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="alert-banner">Seleccioná la parada exacta</div>
+    <div class="results-list" id="paradasCalleList"></div>
+  </div>
+
+  <!-- DETALLE PARADA -->
+  <div class="screen" id="paradaDetalle" role="region" aria-label="Detalle de parada">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadaDetalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68F; Parada</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div id="paradaDetalleContent"></div>
+  </div>
+
+  <!-- CÓMO LLEGAR -->
+  <div class="screen" id="rutas" role="region" aria-label="Cómo llegar">
+    <div class="header">
+      <button class="btn-icon" id="backFromRutas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F5FA; ¿A dónde querés ir?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="info-text">
+      <strong>&#x1F4CD; Paso 1:</strong> Buscá tu destino. La app te dirá qué línea tomar desde tu ubicación.
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="destinoSearchInput" placeholder="Ej: Plaza, Banco, Escuela..." aria-label="Buscar destino" data-announce="Campo de búsqueda de destino">
+      <button class="mic-btn" id="micDestino" aria-label="Buscar por voz" data-announce="Buscar destino por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="destinoResults"></div>
+    <div id="rutaResultado" style="margin-top: 15px;"></div>
+  </div>
+
+  <!-- MAPA -->
+  <div class="screen" id="mapa" role="region" aria-label="Mapa">
+    <div class="header">
+      <button class="btn-icon" id="backFromMapa" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F5FA; Mapa de Paradas</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="status-bar" id="mapStatus">Mostrando todas las paradas</div>
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="map-controls">
+        <button class="map-btn" id="btnMiUbicacion" data-announce="Mi ubicación"><span>&#x1F4CD;</span><span>UBICACIÓN</span></button>
+        <button class="map-btn" id="btnCercanas" data-announce="Paradas cercanas"><span>&#x1F50D;</span><span>CERCANAS</span></button>
+        <button class="map-btn" id="btnUbicacionPrueba" style="background: var(--accent-orange);" data-announce="Ubicación de prueba"><span>&#x1F9EA;</span><span>PRUEBA</span></button>
+        <button class="map-btn" id="btnZoomIn" data-announce="Acercar"><span>&#x2795;</span></button>
+      </div>
+    </div>
+    <div class="info-text" style="margin-top: 10px;">
+      <strong>&#x1F4A1; Consejo:</strong> Tocá cualquier marcador para escuchar información.
+    </div>
+  </div>
+
+  <!-- FAVORITOS -->
+  <div class="screen" id="favoritos" role="region" aria-label="Favoritos">
+    <div class="header">
+      <button class="btn-icon" id="backFromFavoritos" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2B50; Mis Favoritos</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="results-list" id="favoritosList"></div>
+  </div>
+
+  <!-- AYUDA -->
+  <div class="screen" id="ayuda" role="region" aria-label="Ayuda">
+    <div class="header">
+      <button class="btn-icon" id="backFromAyuda" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2753; Ayuda</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="info-text">
+      <strong>Bienvenido a Walk Boundless</strong><br><br>
+      Esta app te ayuda a navegar el transporte público del macrocentro de Salta Capital.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F3A4; ENTRADA DE VOZ</strong><br><br>
+      Tocá el botón de micrófono junto a cada buscador para hablar en lugar de escribir.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F68C; LÍNEAS</strong><br><br>
+      Buscá tu línea por número o ramal. Podés guardar tus favoritas.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F68F; PARADAS</strong><br><br>
+      Buscá por calle. Te mostraremos las paradas y qué líneas pasan.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F5FA; CÓMO LLEGAR</strong><br><br>
+      Decile a la app a dónde querés ir y te indicará qué línea tomar. Busca en el mapa, lugares predefinidos y la base de datos.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F5FA; MAPA</strong><br><br>
+      Visualizá todas las paradas. Usá "Mi Ubicación" y "Cercanas".
+    </div>
+    <button class="btn-big" id="btnReadHelp" aria-label="Leer ayuda" data-announce="Leer ayuda en voz alta">
+      <span class="icon">&#x1F50A;</span><span>LEER EN VOZ ALTA</span>
+    </button>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="screen" id="config" role="region" aria-label="Configuración">
+    <div class="header">
+      <button class="btn-icon" id="backFromConfig" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2699; Configuración</h1>
+      <div style="width:55px"></div>
+    </div>
+    <h2 class="section-title">&#x1F50A; Voz</h2>
+    <button class="btn-big" id="btnSlowVoice" data-announce="Voz lenta">&#x1F422; LENTA</button>
+    <button class="btn-big green" id="btnNormalVoice" data-announce="Voz normal">&#x1F6B6; NORMAL</button>
+    <button class="btn-big blue" id="btnFastVoice" data-announce="Voz rápida">&#x1F3C3; RÁPIDA</button>
+    <button class="back-btn" id="btnSaveConfig" data-announce="Volver al menú">VOLVER</button>
+  </div>
+
+</div>
+
+<script>
+// ============================================
+// CONFIGURACIÓN
+// ============================================
+const config = {
+  voiceEnabled: true,
+  voiceRate: 1.0,
+  currentFilter: 'numero',
+  currentLetter: null
+};
+
+let favoritos = JSON.parse(localStorage.getItem('wb_favoritos') || '[]');
+let map = null;
+let markers = [];
+let userMarker = null;
+let userLocation = null;
+let allParadas = [];
+let isListening = false;
+
+// ============================================
+// LUGARES DE INTERÉS EXPANDIDOS (40+ lugares)
+// ============================================
+const lugaresInteresSalta = [
+  // Centro histórico
+  { nombre: "Plaza 9 de Julio", lat: -24.7889, lng: -65.4114, categoria: "plaza", icono: "&#x26F2;" },
+  { nombre: "Catedral de Salta", lat: -24.7895, lng: -65.4110, categoria: "church", icono: "&#x26EA;" },
+  { nombre: "Cabildo de Salta", lat: -24.7892, lng: -65.4118, categoria: "museum", icono: "&#x1F3DB;" },
+  { nombre: "Terminal de Ómnibus", lat: -24.7748, lng: -65.4233, categoria: "bus_station", icono: "&#x1F68C;" },
+  { nombre: "Hospital San Bernardo", lat: -24.7857, lng: -65.4165, categoria: "hospital", icono: "&#x1F3E5;" },
+  { nombre: "Mercado San Miguel", lat: -24.7890, lng: -65.4095, categoria: "marketplace", icono: "&#x1F3EA;" },
+  { nombre: "Parque San Martín", lat: -24.7825, lng: -65.4145, categoria: "park", icono: "&#x1F333;" },
+  { nombre: "Cerro San Bernardo", lat: -24.7833, lng: -65.4083, categoria: "park", icono: "&#x26F0;" },
+  { nombre: "Cerro San Lorenzo", lat: -24.7750, lng: -65.4050, categoria: "park", icono: "&#x26F0;" },
+  { nombre: "Estadio Martearena", lat: -24.7700, lng: -65.4200, categoria: "sports_centre", icono: "&#x26BD;" },
+  { nombre: "Shopping del Sol", lat: -24.7950, lng: -65.4200, categoria: "mall", icono: "&#x1F6CD;" },
+  { nombre: "Banco Macro Centro", lat: -24.7885, lng: -65.4115, categoria: "bank", icono: "&#x1F3E6;" },
+  { nombre: "Banco Nación", lat: -24.7890, lng: -65.4120, categoria: "bank", icono: "&#x1F3E6;" },
+  { nombre: "Escuela Zorrilla", lat: -24.7900, lng: -65.4130, categoria: "school", icono: "&#x1F3EB;" },
+  { nombre: "Universidad Nacional de Salta", lat: -24.7850, lng: -65.4150, categoria: "university", icono: "&#x1F393;" },
+  { nombre: "Teatro Provincial", lat: -24.7888, lng: -65.4112, categoria: "theatre", icono: "&#x1F3AD;" },
+  { nombre: "Museo de Arte Contemporáneo", lat: -24.7893, lng: -65.4108, categoria: "museum", icono: "&#x1F3A8;" },
+  { nombre: "Iglesia San Francisco", lat: -24.7897, lng: -65.4125, categoria: "church", icono: "&#x26EA;" },
+  { nombre: "Farmacia del Centro", lat: -24.7880, lng: -65.4110, categoria: "pharmacy", icono: "&#x1F48A;" },
+  { nombre: "Supermercado Día", lat: -24.7870, lng: -65.4100, categoria: "supermarket", icono: "&#x1F6D2;" },
+  
+  // Nuevos lugares basados en las paradas extendidas
+  { nombre: "Plaza de la Familia", lat: -24.7945, lng: -65.4145, categoria: "park", icono: "&#x1F333;" },
+  { nombre: "Hiper Libertad", lat: -24.8290, lng: -65.4295, categoria: "supermarket", icono: "&#x1F6D2;" },
+  { nombre: "Club Norte", lat: -24.7545, lng: -65.3995, categoria: "sports_centre", icono: "&#x26BD;" },
+  { nombre: "Monoblock Salta", lat: -24.7810, lng: -65.4150, categoria: "government", icono: "&#x1F3DB;" },
+  { nombre: "Frigorífico La Florida", lat: -24.7825, lng: -65.4090, categoria: "industrial", icono: "&#x1F3ED;" },
+  { nombre: "Supermercado Vea", lat: -24.7943, lng: -65.4142, categoria: "supermarket", icono: "&#x1F6D2;" },
+  { nombre: "Farmacia Fleming", lat: -24.7877, lng: -65.4118, categoria: "pharmacy", icono: "&#x1F48A;" },
+  { nombre: "Banco Nacional", lat: -24.7877, lng: -65.4111, categoria: "bank", icono: "&#x1F3E6;" },
+  { nombre: "Plazoleta Oñativia", lat: -24.7879, lng: -65.4025, categoria: "park", icono: "&#x1F333;" },
+  { nombre: "Barrio Los Pinos", lat: -24.7900, lng: -65.4200, categoria: "residential", icono: "&#x1F3D8;" },
+  { nombre: "Barrio El Huaico", lat: -24.7700, lng: -65.4100, categoria: "residential", icono: "&#x1F3D8;" },
+  { nombre: "Asentamiento Universitario", lat: -24.7650, lng: -65.4050, categoria: "university", icono: "&#x1F393;" },
+  { nombre: "Reserva Bosques Protectores", lat: -24.7800, lng: -65.3950, categoria: "park", icono: "&#x1F332;" },
+  { nombre: "Barrio Complejo Arenales", lat: -24.7950, lng: -65.4150, categoria: "residential", icono: "&#x1F3D8;" },
+  { nombre: "Barrio San Francisco", lat: -24.8000, lng: -65.4100, categoria: "residential", icono: "&#x1F3D8;" }
+];
+
+// ============================================
+// ASISTENTE DE VOZ CON CORRECCIÓN DE FEEDBACK
+// ============================================
+let synth = window.speechSynthesis;
+let hoverTimeout = null;
+
+function speak(text, priority = false) {
+  if (!config.voiceEnabled) return;
+  
+  // Si está escuchando, NO hablar para evitar feedback
+  if (isListening) {
+    console.log('&#x26A0;&#xFE0F; TTS bloqueado: micrófono activo');
+    return;
+  }
+  
+  synth.cancel();
+  if (hoverTimeout) { clearTimeout(hoverTimeout); hoverTimeout = null; }
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'es-AR';
+  utterance.rate = config.voiceRate;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  
+  const voices = synth.getVoices();
+  const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+  if (spanishVoice) utterance.voice = spanishVoice;
+  
+  const indicator = document.getElementById('voiceIndicator');
+  indicator.classList.add('active');
+  utterance.onend = () => { indicator.classList.remove('active'); };
+  utterance.onerror = () => { indicator.classList.remove('active'); };
+  
+  if (priority) { synth.speak(utterance); }
+  else { setTimeout(() => { synth.speak(utterance); }, 50); }
+}
+
+function speakHover(text) {
+  if (!config.voiceEnabled || isListening) return;
+  synth.cancel();
+  if (hoverTimeout) clearTimeout(hoverTimeout);
+  
+  hoverTimeout = setTimeout(() => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-AR';
+    utterance.rate = config.voiceRate;
+    
+    const voices = synth.getVoices();
+    const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+    if (spanishVoice) utterance.voice = spanishVoice;
+    
+    const indicator = document.getElementById('voiceIndicator');
+    indicator.classList.add('active');
+    utterance.onend = () => indicator.classList.remove('active');
+    utterance.onerror = () => indicator.classList.remove('active');
+    
+    synth.speak(utterance);
+  }, 30);
+}
+
+function vibrate(pattern = [100, 50, 100]) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+function playAlert() {
+  if (isListening) return;
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.frequency.value = 800;
+    gainNode.gain.value = 0.3;
+    oscillator.start();
+    setTimeout(() => { oscillator.frequency.value = 1000; }, 150);
+    setTimeout(() => { oscillator.stop(); audioCtx.close(); }, 300);
+  } catch(e) {}
+  vibrate([200, 100, 200]);
+}
+
+// ============================================
+// RECONOCIMIENTO DE VOZ CORREGIDO
+// ============================================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let currentMicBtn = null;
+let currentInput = null;
+let currentCallback = null;
+
+function inicializarReconocimiento() {
+  if (!SpeechRecognition) {
+    console.warn('&#x26A0;&#xFE0F; Reconocimiento de voz no soportado');
+    return false;
+  }
+  
+  recognition = new SpeechRecognition();
+  recognition.lang = 'es-AR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  
+  recognition.onstart = () => {
+    isListening = true;
+    if (currentMicBtn) {
+      currentMicBtn.classList.add('listening');
+      currentMicBtn.innerHTML = '&#x1F534;';
+    }
+    // NO usar speak() aquí porque el micrófono está activo
+    // En su lugar, mostrar indicador visual
+    const indicator = document.getElementById('voiceIndicator');
+    indicator.classList.add('active');
+    indicator.innerHTML = '&#x1F3A4;';
+  };
+  
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    console.log('&#x1F3A4; Reconocido:', transcript);
+    
+    if (currentInput) {
+      currentInput.value = transcript;
+      currentInput.dispatchEvent(new Event('input'));
+    }
+    
+    if (currentCallback) {
+      setTimeout(() => currentCallback(transcript), 300);
+    }
+  };
+  
+  recognition.onerror = (event) => {
+    console.error('&#x274C; Error:', event.error);
+  };
+  
+  recognition.onend = () => {
+    isListening = false;
+    if (currentMicBtn) {
+      currentMicBtn.classList.remove('listening');
+      currentMicBtn.innerHTML = '&#x1F3A4;';
+    }
+    const indicator = document.getElementById('voiceIndicator');
+    indicator.classList.remove('active');
+    indicator.innerHTML = '&#x1F50A;';
+    
+    // Ahora sí podemos hablar
+    setTimeout(() => {
+      if (currentInput && currentInput.value) {
+        speak('Escuché: ' + currentInput.value, true);
+      } else {
+        speak('No pude entender. Intentá de nuevo.', true);
+      }
+    }, 500);
+  };
+  
+  return true;
+}
+
+function iniciarReconocimiento(inputElement, callback) {
+  if (!recognition) {
+    speak('El reconocimiento de voz no está disponible. Usá Chrome.', true);
+    return;
+  }
+  
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    speak('El micrófono requiere HTTPS.', true);
+    return;
+  }
+  
+  // DETENER TTS antes de iniciar micrófono
+  synth.cancel();
+  setTimeout(() => {
+    currentInput = inputElement;
+    currentCallback = callback || null;
+    
+    try { recognition.start(); }
+    catch(e) { recognition.stop(); setTimeout(() => recognition.start(), 100); }
+  }, 300);
+}
+
+// ============================================
+// HOVER ANNOUNCEMENTS
+// ============================================
+function setupHoverAnnouncements() {
+  document.querySelectorAll('[data-announce]').forEach(element => {
+    element.addEventListener('mouseenter', (e) => {
+      const text = e.target.getAttribute('data-announce');
+      if (text) speakHover(text);
+    });
+    element.addEventListener('focus', (e) => {
+      const text = e.target.getAttribute('data-announce');
+      if (text) speakHover(text);
+    });
+  });
+  
+  document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('mouseenter', () => speakHover(item.querySelector('.label').textContent));
+    item.addEventListener('focus', () => speakHover(item.querySelector('.label').textContent));
+  });
+  
+  document.addEventListener('mouseenter', (e) => {
+    const resultItem = e.target.closest('.result-item');
+    if (resultItem) { const h3 = resultItem.querySelector('h3'); if (h3) speakHover(h3.textContent); }
+    const stopItem = e.target.closest('.stop-item');
+    if (stopItem) speakHover(stopItem.textContent.trim());
+    const lineaItem = e.target.closest('.linea-item');
+    if (lineaItem) { const span = lineaItem.querySelector('span:last-child'); if (span) speakHover('Línea ' + span.textContent); }
+    const letterBtn = e.target.closest('.letter-btn');
+    if (letterBtn) { const letra = letterBtn.dataset.letra; speakHover(letra === 'TODAS' ? 'Mostrar todas' : 'Filtrar por ' + letra); }
+    const filterBtn = e.target.closest('.filter-btn');
+    if (filterBtn) speakHover(filterBtn.textContent.trim());
+    const micBtn = e.target.closest('.mic-btn');
+    if (micBtn) speakHover('Tocá para hablar');
+    const destinoOpt = e.target.closest('.destino-option');
+    if (destinoOpt) { const h3 = destinoOpt.querySelector('h3'); if (h3) speakHover(h3.textContent); }
+  }, true);
+  
+  document.addEventListener('focus', (e) => {
+    const resultItem = e.target.closest('.result-item');
+    if (resultItem) { const h3 = resultItem.querySelector('h3'); if (h3) speakHover(h3.textContent); }
+    const stopItem = e.target.closest('.stop-item');
+    if (stopItem) speakHover(stopItem.textContent.trim());
+    const lineaItem = e.target.closest('.linea-item');
+    if (lineaItem) { const span = lineaItem.querySelector('span:last-child'); if (span) speakHover('Línea ' + span.textContent); }
+    const destinoOpt = e.target.closest('.destino-option');
+    if (destinoOpt) { const h3 = destinoOpt.querySelector('h3'); if (h3) speakHover(h3.textContent); }
+  }, true);
+}
+
+// ============================================
+// BASE DE DATOS
+// ============================================
+let db = null;
+
+async function inicializarDB() {
+  const SQL = await initSqlJs({
+    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+  });
+  
+  db = new SQL.Database();
+  
+  db.run(`CREATE TABLE calles (id_calle INTEGER PRIMARY KEY, nombre TEXT)`);
+  db.run(`CREATE TABLE lineas (id_linea INTEGER PRIMARY KEY, nombre TEXT)`);
+  db.run(`CREATE TABLE paradas (id_parada INTEGER PRIMARY KEY, id_calle_principal INTEGER, latitud REAL, longitud REAL, descripcion_ubicacion TEXT, referencia_accesibilidad TEXT)`);
+  db.run(`CREATE TABLE parada_linea (id_parada INTEGER, id_linea INTEGER)`);
+  
+  cargarDatos();
+  console.log('&#x2705; DB inicializada');
+}
+
+function cargarDatos() {
+  const calles = [
+    [1,"Arenales"],[2,"Anzoátegui"],[3,"Aniceto Latorre"],[4,"12 de Octubre"],[5,"O´Higgins"],
+    [6,"Ameghino"],[7,"Necochea"],[8,"Alsina"],[9,"Av. Entre Rios"],[10,"Rivadavia"],
+    [11,"Leguizamon"],[12,"Santiago del Estero"],[13,"General Martín Güemes"],[14,"Av. Belgrano"],
+    [15,"España"],[16,"Caseros"],[17,"Alvarado"],[18,"Urquiza"],[19,"Av. San Martín"],
+    [20,"Mendoza"],[21,"San Juan"],[22,"San Luis"],[23,"La Rioja"],[24,"Tucumán"],
+    [25,"Corrientes"],[26,"Zabala"],[27,"Ibazeta"],[28,"Martín Cornejo"],[29,"Almirante Brown"],
+    [30,"Simon Bolivar"],[31,"Marcelo T. de Alvear"],[32,"Dr. Adolfo Güemes"],[33,"Av. Sarmiento"],
+    [34,"25 de Mayo"],[35,"20 de Febrero"],[36,"Balcarce"],[37,"Mitre"],[38,"Zuviría"],
+    [39,"Dean Funes"],[40,"Pueyrredon"],[41,"Vicente Lopez"],[42,"Juramento"],
+    [43,"Av. Bicentenario de la Batalla de Salta"],[44,"Laprida"],[45,"10 de Octubre"],
+    [46,"Lamadrid"],[47,"General Paz"],[48,"Gorriti"],[49,"Islas Malvinas"],[50,"Av. Jujuy"],
+    [51,"Pellegrini"],[52,"Ituzaingo"],[53,"La Florida"],[54,"Alberdi"],[55,"Buenos Aires"],
+    [56,"Cordoba"],[57,"Lerma"],[58,"Catamarca"],[59,"Santa Fe"],[60,"Lavalle"],
+    [61,"Av. Hipolito Yrigoyen"],
+    [62,"Av. Juan Domingo Peron"],[63,"Av. de Circunvalación Papa Juan XXIII"],
+    [64,"Av. Monseñor Tavella"],[65,"Av. Independencia"],[66,"Rondeau"],
+    [67,"Av. Bolivia"],[68,"Av. Houssay Bernardo Doctor"],
+    [69,"Los Curupayes"],[70,"Los Damascos"],
+    [72,"Republica de Siria"],[73,"Ing. Abel Cornejo"],[74,"Av. Constitución Nacional"],
+    [75,"Pje. Zorrilla"]
+  ];
+  calles.forEach(c => db.run("INSERT OR REPLACE INTO calles VALUES (?, ?)", c));
+  
+  const lineas = [
+    [1,"1A"],[2,"1B"],[3,"1C"],[4,"2A"],[5,"2B Floresta"],[6,"2B Parque Industrial"],
+    [7,"2B Villa Mitre"],[8,"2C"],[9,"2D"],[10,"2E"],[11,"2E Articulado"],[12,"2F"],
+    [13,"2F Pedreras"],[14,"2G"],[15,"2G Nocturno"],[16,"3A"],[17,"3B"],[18,"3C"],
+    [19,"3E"],[20,"4A R. Romero"],[21,"4A Sauce"],[22,"4B"],[23,"4C"],[24,"4C Progreso"],
+    [25,"4D"],[26,"4D Ceibal"],[27,"4E"],[28,"5A Catolica"],[29,"5A Profesionales"],
+    [30,"5A Samson"],[31,"5B"],[32,"5C"],[33,"5D Huaico Mirasoles"],[34,"6A"],
+    [35,"6A Huaico II"],[36,"6B"],[37,"6B J. M. Rosas"],[38,"6C"],[39,"6D Huaico Mirasoles"],
+    [40,"7 Enlace 1ro Mayo"],[41,"7A"],[42,"7B"],[43,"7C Convivencia"],[44,"7C Solidaridad"],
+    [45,"7CD Articulado"],[46,"7D"],[47,"7D Justicia"],[48,"7E Articulado"],[49,"7E Circulo"],
+    [50,"7E Pinares"],[51,"8A"],[52,"8B"],[53,"8C"]
+  ];
+  lineas.forEach(l => db.run("INSERT OR REPLACE INTO lineas VALUES (?, ?)", l));
+  
+  const paradas = [
+    [1,19,-24.79368383655699,-65.40970172487158,"Sobre Av. San Martín, a 10 metros de la esquina con Buenos Aires.","Poste de metal con relieve. La vereda cuenta con baldosas guía."],
+    [2,14,-24.787661748665027,-65.41177294715105,"Sobre Av. Belgrano, frente a la farmacia Fleming.","Poste de metal, con cesto de basura integrado"],
+    [3,19,-24.793159121495794,-65.41457370725622,"Sobre Av. San Martín a 15 metros pasando Ituzaingó","Poste de metal, en vereda ancha"],
+    [4,14,-24.787722384932444,-65.41111528304327,"Sobre Av. Belgrano 5 metros antes de llegar a calle Mitre","Poste de metal, en vereda amplia. Fuera del Banco Nacional"],
+    [5,57,-24.795239051471732,-65.40725861590909,"Sobre calle Lerma, esquina Mendoza","Poste de metal, al borde de la esquina y pegado a una rampa para sillas de ruedas."],
+    [6,51,-24.796055990328338,-65.41571842268013,"Sobre Pellegrini a 5 metros de calle San Juan","Poste de cemento sólido. Vereda amplia."],
+    [7,9,-24.78095273109147,-65.4149480927063,"Sobre avenida Entre Rios, a las afueras del Monoblock Salta","Parada con Garita de espera. Cuenta con vereda amplia"],
+    [8,43,-24.787871418210436,-65.4024805822512,"Sobre la Av. del Bicentenario, en la Plazoleta Doctor Arturo Oñativia.","Parada con garita de espera, con vereda amplia"],
+    [9,35,-24.78927526233031,-65.41381801873762,"Sobre calle 20 de Febrero a 15 metros de calle Caseros.","Poste de metal con cesto de basura integrado."],
+    [10,38,-24.78270170652911,-65.40892317056675,"Sobre Zuviría esquina Rivadavia, a las afueras del Frigorífico La Florida","Poste de metal, con vereda amplia, muy cerca de un poste de cemento sólido."],
+    [11,62,-24.77839698654846,-65.43180177855396,"Sobre Av. Juan Domingo Perón a escasos metros de la esquina","Pequeño poste de madera, al borde de la vereda"],
+    [12,64,-24.829283260836775,-65.42944918621147,"Sobre Av. Monseñor Tavella a 20 metros de la entrada del Hiper Libertad","Parada con Garita de espera."],
+    [13,65,-24.808243313550093,-65.40561231605494,"Sobre Av. Independencia a metros de la esquina con Rondeau","Poste de madera, al costado de una caja de distribución de Telecom"],
+    [14,22,-24.797799185426523,-65.40627904235971,"Sobre calle San Luis a metros de la esquina con calle Catamarca","Sin postes ni garitas, con un portón metálico contra la pared"],
+    [15,57,-24.79782433594004,-65.40743752930739,"Sobre calle Lerma, esquina San Luis","Poste de madera, con vereda amplia, a metros de un árbol"],
+    [16,52,-24.7942937578915,-65.41417703486182,"Sobre calle Ituzaingó fuera del supermercado Vea","Poste de metal con vereda semi amplia."],
+    [17,22,-24.796479261966862,-65.424224427527,"Sobre calle San Luis a metros de la esquina con calle 10 de Octubre","Poste de madera, con baldosas rotas alrededor"],
+    [18,61,-24.800468265579298,-65.39743272552272,"Sobre Av. Hipólito Yrigoyen a metros de la calle Abel Cornejo","Poste de metal ancho, con dos postes de cemento cerca"],
+    [19,74,-24.75131906652111,-65.40568137156023,"Sobre Av. Constitución Nacional a metros de esquina con calle Juramento","Dos postes de madera cercanos"],
+    [20,67,-24.7302348436613,-65.41058013120471,"Sobre Av. Bolivia a 15 metros de Av. Houssay","Poste de cemento, con vereda amplia"],
+    [21,43,-24.754354771445463,-65.39939136955718,"Sobre Av. Bicentenario de la Batalla de Salta Fuera de Club Norte","Poste de madera al borde de la vereda, con piso de pasto"],
+    [22,43,-24.761713674443406,-65.39701248954982,"Sobre Av. Bicentenario de la Batalla de Salta a metros de calle Los Damascos","Poste de cemento, con cesto de basura y piso de tierra"],
+    [23,14,-24.78751910319096,-65.40609296414348,"Sobre Av. Belgrano a 20 metros de la esquina","Poste de metal con cesto de basura integrado."],
+    [24,16,-24.788916632347615,-65.42490838325938,"Sobre calle Caseros, esquina calle Laprida","Tres postes de madera casi juntos."],
+    [25,72,-24.788184759195506,-65.42746415378691,"Sobre calle Republica de Siria, a las afueras de un paredón de cemento.","Poste cuadrado de metal ancho, con vereda amplia"]
+  ];
+  paradas.forEach(p => db.run("INSERT OR REPLACE INTO paradas VALUES (?, ?, ?, ?, ?, ?)", p));
+  
+  const nombreAId = {};
+  lineas.forEach(l => { nombreAId[l[1].toUpperCase()] = l[0]; });
+  
+  const lineasPorParada = {
+    1: ["4A SAUCE", "4C", "4D", "5A SAMSON", "5B"],
+    2: ["2A", "2C", "2E", "2E ARTICULADO"],
+    3: ["6A", "6A HUAICO II", "6C"],
+    4: ["6A", "6A HUAICO II", "6C"],
+    5: ["2F", "3A"],
+    6: ["1B"],
+    7: ["2D", "2F", "7D", "7D JUSTICIA"],
+    8: ["4A R. ROMERO", "4A SAUCE", "4B", "4C", "4C PROGRESO"],
+    9: ["7D", "7D JUSTICIA", "7E CIRCULO", "7E PINARES"],
+    10: ["4E", "5A PROFESIONALES", "5A SAMSON", "6A", "6A HUAICO II", "6C"],
+    11: ["3A", "4E"],
+    12: ["8A"],
+    13: ["2C", "2G", "2G NOCTURNO"],
+    14: ["7C CONVIVENCIA", "7C SOLIDARIDAD"],
+    15: ["2F", "3A"],
+    16: ["7D", "7D JUSTICIA", "7E CIRCULO", "7E PINARES"],
+    17: ["4A R. ROMERO", "4A SAUCE"],
+    18: ["2D", "2E", "2E ARTICULADO", "2G", "2G NOCTURNO", "3E", "8A"],
+    19: ["6B", "6B J. M. ROSAS", "7A"],
+    20: ["6A", "6A HUAICO II", "6C"],
+    21: ["5A CATOLICA", "5A PROFESIONALES", "5A SAMSON"],
+    22: ["5A CATOLICA", "5A PROFESIONALES", "5A SAMSON"],
+    23: ["4A R. ROMERO", "4A SAUCE", "4B", "4C", "4C PROGRESO", "6B", "6B J. M. ROSAS"],
+    24: ["5A CATOLICA", "5A PROFESIONALES", "5A SAMSON"],
+    25: ["5A CATOLICA", "5A PROFESIONALES", "5A SAMSON"]
+  };
+  
+  function buscarIdLinea(nombreBuscado) {
+    const nombre = nombreBuscado.toUpperCase().trim();
+    if (nombreAId[nombre]) return nombreAId[nombre];
+    for (const [nombreLinea, id] of Object.entries(nombreAId)) {
+      if (nombreLinea.includes(nombre) || nombre.includes(nombreLinea)) return id;
+    }
+    console.warn(`&#x26A0;&#xFE0F; Línea no encontrada: "${nombreBuscado}"`);
+    return null;
+  }
+  
+  let totalRelaciones = 0;
+  for (const [paradaId, lineasNombres] of Object.entries(lineasPorParada)) {
+    for (const nombreLinea of lineasNombres) {
+      const idLinea = buscarIdLinea(nombreLinea);
+      if (idLinea) {
+        db.run("INSERT OR IGNORE INTO parada_linea VALUES (?, ?)", [parseInt(paradaId), idLinea]);
+        totalRelaciones++;
+      }
+    }
+  }
+  
+  console.log(`&#x2705; ${totalRelaciones} relaciones parada-línea cargadas`);
+  
+  const results = db.exec("SELECT id_parada, descripcion_ubicacion FROM paradas");
+  if (results.length > 0) {
+    allParadas = results[0].values.map(row => {
+      const id = row[0];
+      const parada = paradas.find(p => p[0] === id);
+      return {
+        id: id,
+        descripcion: row[1],
+        lat: parada ? parada[2] : null,
+        lng: parada ? parada[3] : null
+      };
+    });
+  }
+  
+  console.log(`&#x2705; Datos cargados. Total paradas: ${allParadas.length}`);
+}
+
+// ============================================
+// FUNCIONES DE CONSULTA
+// ============================================
+
+function buscarLineas(filtro, texto) {
+  if (!texto || texto.trim().length === 0) {
+    const results = db.exec(`SELECT id_linea, nombre FROM lineas ORDER BY nombre`);
+    if (results.length === 0) return [];
+    return results[0].values.map(row => ({ id_linea: row[0], nombre: row[1] }));
+  }
+  
+  const textoUpper = texto.toUpperCase().trim();
+  
+  if (filtro === 'numero') {
+    const query = `SELECT id_linea, nombre FROM lineas WHERE UPPER(nombre) LIKE ? ORDER BY nombre`;
+    const results = db.exec(query, [`${textoUpper}%`]);
+    if (results.length === 0) return [];
+    return results[0].values.map(row => ({ id_linea: row[0], nombre: row[1] }));
+  } else {
+    const results = db.exec(`SELECT id_linea, nombre FROM lineas ORDER BY nombre`);
+    if (results.length === 0) return [];
+    const todasLineas = results[0].values.map(row => ({ id_linea: row[0], nombre: row[1] }));
+    return todasLineas.filter(linea => {
+      const match = linea.nombre.toUpperCase().match(/^(\d+)([A-Z]+)/);
+      if (match) return match[2].startsWith(textoUpper);
+      return false;
+    });
+  }
+}
+
+function obtenerParadasDeLinea(idLinea) {
+  const results = db.exec(`SELECT p.id_parada, p.descripcion_ubicacion FROM paradas p INNER JOIN parada_linea pl ON p.id_parada = pl.id_parada WHERE pl.id_linea = ?`, [idLinea]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({ id_parada: row[0], descripcion: row[1] }));
+}
+
+function buscarCalles(filtro, texto) {
+  if (filtro && filtro !== 'TODAS') {
+    const results = db.exec(`SELECT id_calle, nombre FROM calles WHERE UPPER(nombre) LIKE ? ORDER BY nombre`, [`${filtro}%`]);
+    if (results.length === 0) return [];
+    return results[0].values.map(row => ({ id_calle: row[0], nombre: row[1] }));
+  } else {
+    if (!texto || texto.trim().length === 0) {
+      const results = db.exec(`SELECT id_calle, nombre FROM calles ORDER BY nombre`);
+      if (results.length === 0) return [];
+      return results[0].values.map(row => ({ id_calle: row[0], nombre: row[1] }));
+    }
+    const results = db.exec(`SELECT id_calle, nombre FROM calles WHERE UPPER(nombre) LIKE ? ORDER BY nombre`, [`%${texto.toUpperCase()}%`]);
+    if (results.length === 0) return [];
+    return results[0].values.map(row => ({ id_calle: row[0], nombre: row[1] }));
+  }
+}
+
+function obtenerParadasDeCalle(idCalle) {
+  const results = db.exec(`SELECT id_parada, descripcion_ubicacion FROM paradas WHERE id_calle_principal = ?`, [idCalle]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({ id_parada: row[0], descripcion: row[1] }));
+}
+
+function obtenerLineasDeParada(idParada) {
+  const results = db.exec(`SELECT l.id_linea, l.nombre FROM lineas l INNER JOIN parada_linea pl ON l.id_linea = pl.id_linea WHERE pl.id_parada = ?`, [idParada]);
+  if (results.length === 0) return [];
+  return results[0].values.map(row => ({ id_linea: row[0], nombre: row[1] }));
+}
+
+function obtenerNombreLinea(idLinea) {
+  const results = db.exec(`SELECT nombre FROM lineas WHERE id_linea = ?`, [idLinea]);
+  if (results.length === 0) return null;
+  return results[0].values[0][0];
+}
+
+function calcularDistancia(lat1, lng1, lat2, lng2) {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function obtenerIconoCategoria(categoria) {
+  const iconos = {
+    'bank': '&#x1F3E6;', 'school': '&#x1F3EB;', 'university': '&#x1F393;', 'hospital': '&#x1F3E5;', 'pharmacy': '&#x1F48A;',
+    'restaurant': '&#x1F37D;', 'cafe': '&#x2615;', 'supermarket': '&#x1F6D2;', 'park': '&#x1F333;', 'plaza': '&#x26F2;',
+    'church': '&#x26EA;', 'museum': '&#x1F3DB;', 'library': '&#x1F4DA;', 'police': '&#x1F46E;', 'fire_station': '&#x1F692;',
+    'fuel': '&#x26FD;', 'parking': '&#x1F17F;', 'bus_station': '&#x1F68C;', 'hotel': '&#x1F3E8;', 'cinema': '&#x1F3AC;',
+    'theatre': '&#x1F3AD;', 'sports_centre': '&#x26BD;', 'government': '&#x1F3DB;', 'post_office': '&#x1F4EE;',
+    'marketplace': '&#x1F3EA;', 'atm': '&#x1F3E7;', 'doctors': '&#x1F468;', 'dentist': '&#x1F9B7;', 'veterinary': '&#x1F43E;',
+    'place_of_worship': '&#x1F64F;', 'mall': '&#x1F6CD;', 'aerodrome': '&#x2708;', 'industrial': '&#x1F3ED;',
+    'residential': '&#x1F3D8;'
+  };
+  return iconos[categoria] || '&#x1F4CD;';
+}
+
+// ============================================
+// GEOLOCALIZACIÓN
+// ============================================
+
+function mostrarMiUbicacion() {
+  if (!navigator.geolocation) {
+    speak('Tu navegador no soporta geolocalización.', true);
+    document.getElementById('mapStatus').textContent = '&#x274C; No soportada';
+    return;
+  }
+  
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    speak('La geolocalización requiere HTTPS. Usá el botón PRUEBA.', true);
+    document.getElementById('mapStatus').textContent = '&#x26A0;&#xFE0F; Requiere HTTPS';
+    return;
+  }
+  
+  speak('Buscando tu ubicación...', true);
+  document.getElementById('mapStatus').textContent = '&#x1F4CD; Buscando...';
+  
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      userLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      };
+      speak(`Ubicación encontrada. Precisión: ${Math.round(userLocation.accuracy)} metros.`, true);
+      document.getElementById('mapStatus').textContent = '&#x2705; Ubicación encontrada';
+      centrarEnUsuario();
+      vibrate([200, 100, 200]);
+    },
+    (error) => {
+      let msg = 'No se pudo obtener tu ubicación. ';
+      if (error.code === error.PERMISSION_DENIED) msg += 'Permiso denegado.';
+      else if (error.code === error.POSITION_UNAVAILABLE) msg += 'GPS no disponible.';
+      else if (error.code === error.TIMEOUT) msg += 'Tiempo agotado.';
+      speak(msg, true);
+      document.getElementById('mapStatus').textContent = '&#x274C; Error';
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+function centrarEnUsuario() {
+  if (!userLocation || !map) return;
+  if (userMarker) map.removeLayer(userMarker);
+  
+  const userIcon = L.divIcon({
+    className: 'user-location-marker',
+    html: '<div style="background: #0066FF; border: 4px solid white; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>',
+    iconSize: [20, 20], iconAnchor: [10, 10]
+  });
+  
+  userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+  userMarker.bindPopup(`<strong>&#x1F4CD; Tu ubicación</strong><br>Precisión: ${userLocation.accuracy ? Math.round(userLocation.accuracy) : '?'} metros`).openPopup();
+  map.setView([userLocation.lat, userLocation.lng], 16);
+  
+  if (userLocation.accuracy) {
+    L.circle([userLocation.lat, userLocation.lng], {
+      radius: userLocation.accuracy, color: '#0066FF', fillColor: '#0066FF', fillOpacity: 0.1, weight: 1
+    }).addTo(map);
+  }
+}
+
+function mostrarParadasCercanas() {
+  if (!userLocation) {
+    speak('Primero activá tu ubicación. Tocá el botón Ubicación.', true);
+    mostrarMiUbicacion();
+    return;
+  }
+  
+  if (!allParadas || allParadas.length === 0) {
+    speak('No hay paradas cargadas.', true);
+    return;
+  }
+  
+  speak('Calculando paradas cercanas...', true);
+  
+  const paradasCercanas = allParadas.map(parada => {
+    const distancia = calcularDistancia(userLocation.lat, userLocation.lng, parada.lat, parada.lng);
+    return { ...parada, distancia };
+  }).filter(p => p.distancia <= 1000).sort((a, b) => a.distancia - b.distancia);
+  
+  if (paradasCercanas.length === 0) {
+    speak('No hay paradas en un radio de 1 kilómetro.', true);
+    document.getElementById('mapStatus').textContent = '&#x26A0;&#xFE0F; Sin paradas cercanas';
+    return;
+  }
+  
+  const masCercana = paradasCercanas[0];
+  const lineasCercanas = obtenerLineasDeParada(masCercana.id);
+  const lineasNombres = lineasCercanas.map(l => l.nombre).join(', ');
+  
+  let mensajeVoz = `Se encontraron ${paradasCercanas.length} paradas cercanas. `;
+  mensajeVoz += `La más próxima está a ${Math.round(masCercana.distancia)} metros. `;
+  mensajeVoz += `Se encuentra ${masCercana.descripcion}. `;
+  if (lineasNombres) mensajeVoz += `Las líneas que pasan son: ${lineasNombres}.`;
+  else mensajeVoz += 'No hay líneas registradas para esta parada.';
+  
+  speak(mensajeVoz, true);
+  document.getElementById('mapStatus').textContent = `&#x1F4CD; ${paradasCercanas.length} paradas (1km)`;
+  
+  map.setView([masCercana.lat, masCercana.lng], 16);
+  
+  const iconoCercana = L.divIcon({
+    className: 'marcador-cercana',
+    html: '<div style="background: #0066FF; border: 4px solid #FFFFFF; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.5);">&#x1F3AF;</div>',
+    iconSize: [40, 40], iconAnchor: [20, 20]
+  });
+  
+  const markerCercano = L.marker([masCercana.lat, masCercana.lng], { icon: iconoCercana })
+    .addTo(map)
+    .bindPopup(`
+      <div style="font-size: 14px; color: #000; padding: 10px; max-width: 250px;">
+        <strong style="font-size: 16px; color: #0066FF;">&#x1F3AF; Parada más cercana</strong><br>
+        <hr style="margin: 8px 0;">
+        <strong>&#x1F4CF; Distancia:</strong> ${Math.round(masCercana.distancia)} metros<br>
+        <strong>&#x1F4CD; Ubicación:</strong><br>
+        <p style="margin: 5px 0; font-style: italic;">${masCercana.descripcion}</p>
+        <strong>&#x1F68C; Líneas que pasan:</strong><br>
+        <p style="margin: 5px 0; font-weight: bold; color: #0066FF;">${lineasNombres || 'Sin líneas registradas'}</p>
+      </div>
+    `)
+    .openPopup();
+  
+  markerCercano.on('click', () => { speak(mensajeVoz, true); vibrate([100, 50, 100]); });
+  vibrate([200, 100, 200, 100, 200]);
+}
+
+function usarUbicacionPrueba() {
+  speak('Usando ubicación de prueba: Centro de Salta', true);
+  userLocation = { lat: -24.7889, lng: -65.4114, accuracy: 10 };
+  document.getElementById('mapStatus').textContent = '&#x1F9EA; Ubicación de prueba';
+  centrarEnUsuario();
+}
+
+// ============================================
+// BÚSQUEDA DE DESTINOS
+// ============================================
+
+async function buscarDestinos(texto) {
+  if (!texto || texto.trim().length < 2) return [];
+  
+  const query = texto.trim().toLowerCase();
+  const destinos = [];
+  
+  const lugaresFiltrados = lugaresInteresSalta.filter(lugar => 
+    lugar.nombre.toLowerCase().includes(query)
+  );
+  
+  lugaresFiltrados.forEach(lugar => {
+    destinos.push({
+      tipo: 'lugar_predefinido',
+      nombre: lugar.nombre,
+      nombreCompleto: lugar.nombre,
+      lat: lugar.lat,
+      lng: lugar.lng,
+      categoria: lugar.categoria,
+      icono: lugar.icono
+    });
+  });
+  
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?` +
+      `q=${encodeURIComponent(texto)}&` +
+      `format=json&` +
+      `addressdetails=1&` +
+      `limit=5&` +
+      `accept-language=es`;
+    
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'WalkBoundlessApp/1.0' }
+    });
+    
+    if (response.ok) {
+      const resultados = await response.json();
+      
+      resultados.forEach(lugar => {
+        const lat = parseFloat(lugar.lat);
+        const lng = parseFloat(lugar.lon);
+        const dentroDeSalta = lat >= -24.85 && lat <= -24.70 && lng >= -65.45 && lng <= -65.35;
+        
+        if (dentroDeSalta) {
+          const yaExiste = destinos.some(d => 
+            Math.abs(d.lat - lat) < 0.001 && Math.abs(d.lng - lng) < 0.001
+          );
+          
+          if (!yaExiste) {
+            destinos.push({
+              tipo: 'lugar_osm',
+              nombre: lugar.display_name.split(',')[0],
+              nombreCompleto: lugar.display_name,
+              lat: lat,
+              lng: lng,
+              categoria: lugar.type || lugar.class || 'lugar',
+              icono: obtenerIconoCategoria(lugar.type || lugar.class)
+            });
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.warn('&#x26A0;&#xFE0F; Nominatim no disponible:', error.message);
+  }
+  
+  const queryUpper = query.toUpperCase();
+  
+  const callesResults = db.exec(
+    `SELECT id_calle, nombre FROM calles WHERE UPPER(nombre) LIKE ? ORDER BY nombre`,
+    [`%${queryUpper}%`]
+  );
+  
+  if (callesResults.length > 0) {
+    callesResults[0].values.forEach(row => {
+      destinos.push({
+        tipo: 'calle',
+        id: row[0],
+        nombre: row[1],
+        nombreCompleto: `Calle ${row[1]}`,
+        icono: '&#x1F6E3;'
+      });
+    });
+  }
+  
+  const paradasResults = db.exec(
+    `SELECT id_parada, descripcion_ubicacion FROM paradas WHERE UPPER(descripcion_ubicacion) LIKE ?`,
+    [`%${queryUpper}%`]
+  );
+  
+  if (paradasResults.length > 0) {
+    paradasResults[0].values.forEach(row => {
+      destinos.push({
+        tipo: 'parada',
+        id: row[0],
+        nombre: row[1].substring(0, 60),
+        nombreCompleto: row[1],
+        icono: '&#x1F68F;'
+      });
+    });
+  }
+  
+  console.log(`&#x1F50D; Búsqueda "${texto}": ${destinos.length} resultados`);
+  return destinos;
+}
+
+function mostrarDestinos(destinos) {
+  const contenedor = document.getElementById('destinoResults');
+  
+  if (destinos.length === 0) {
+    contenedor.innerHTML = `
+      <div class="info-text">
+        <strong>&#x1F50D; No se encontraron resultados.</strong><br><br>
+        <strong>Intentá con:</strong><br>
+        &#x2022; "Plaza", "Catedral", "Terminal"<br>
+        &#x2022; "Banco", "Escuela", "Hospital"<br>
+        &#x2022; "Belgrano", "San Martín", "Mitre"<br><br>
+        <strong>Ejemplos:</strong><br>
+        &#x2022; "Plaza 9 de Julio"<br>
+        &#x2022; "Plaza de la Familia"<br>
+        &#x2022; "Banco Macro"<br>
+        &#x2022; "Hospital"
+      </div>
+    `;
+    speak('No se encontraron resultados. Intentá con otro nombre.', true);
+    return;
+  }
+  
+  const lugaresPredefinidos = destinos.filter(d => d.tipo === 'lugar_predefinido');
+  const lugaresOSM = destinos.filter(d => d.tipo === 'lugar_osm');
+  const callesBD = destinos.filter(d => d.tipo === 'calle');
+  const paradasBD = destinos.filter(d => d.tipo === 'parada');
+  
+  let html = '';
+  
+  if (lugaresPredefinidos.length > 0) {
+    html += '<h2 class="section-title">&#x2B50; Lugares conocidos</h2>';
+    html += lugaresPredefinidos.map(d => `
+      <div class="destino-option" 
+           data-destino-lat="${d.lat}" 
+           data-destino-lng="${d.lng}"
+           data-destino-tipo="lugar_predefinido"
+           data-destino-nombre="${d.nombre}"
+           role="button" 
+           tabindex="0" 
+           aria-label="${d.nombre}"
+           data-announce="${d.nombre}">
+        <h3>${d.icono} ${d.nombre}</h3>
+        <p style="font-size: 14px; margin-top: 5px; color: var(--accent-yellow);">Tocá para ver cómo llegar</p>
+      </div>
+    `).join('');
+  }
+  
+  if (lugaresOSM.length > 0) {
+    html += '<h2 class="section-title">&#x1F5FA; Lugares en el mapa</h2>';
+    html += lugaresOSM.map(d => `
+      <div class="destino-option" 
+           data-destino-lat="${d.lat}" 
+           data-destino-lng="${d.lng}"
+           data-destino-tipo="lugar_osm"
+           data-destino-nombre="${d.nombre}"
+           role="button" 
+           tabindex="0" 
+           aria-label="${d.nombre}"
+           data-announce="${d.nombre}">
+        <h3>${d.icono} ${d.nombre}</h3>
+        <p style="font-size: 14px; opacity: 0.8;">${d.nombreCompleto}</p>
+        <p style="font-size: 14px; margin-top: 5px; color: var(--accent-yellow);">Tocá para ver cómo llegar</p>
+      </div>
+    `).join('');
+  }
+  
+  if (callesBD.length > 0) {
+    html += '<h2 class="section-title">&#x1F6E3; Calles</h2>';
+    html += callesBD.map(d => `
+      <div class="destino-option" 
+           data-destino-id="${d.id}"
+           data-destino-tipo="calle"
+           data-destino-nombre="${d.nombre}"
+           role="button" 
+           tabindex="0" 
+           aria-label="${d.nombre}"
+           data-announce="${d.nombre}">
+        <h3>${d.icono} ${d.nombre}</h3>
+        <p style="font-size: 14px; margin-top: 5px; color: var(--accent-yellow);">Tocá para ver cómo llegar</p>
+      </div>
+    `).join('');
+  }
+  
+  if (paradasBD.length > 0) {
+    html += '<h2 class="section-title">&#x1F68F; Paradas</h2>';
+    html += paradasBD.map(d => `
+      <div class="destino-option" 
+           data-destino-id="${d.id}"
+           data-destino-tipo="parada"
+           data-destino-nombre="${d.nombre}"
+           role="button" 
+           tabindex="0" 
+           aria-label="${d.nombre}"
+           data-announce="${d.nombre}">
+        <h3>${d.icono} ${d.nombre}</h3>
+        <p style="font-size: 14px; margin-top: 5px; color: var(--accent-yellow);">Tocá para ver cómo llegar</p>
+      </div>
+    `).join('');
+  }
+  
+  contenedor.innerHTML = html;
+  speak(`Se encontraron ${destinos.length} resultados.`, true);
+  
+  contenedor.querySelectorAll('[data-destino-tipo="lugar_predefinido"], [data-destino-tipo="lugar_osm"]').forEach(item => {
+    item.addEventListener('click', () => {
+      const destino = {
+        tipo: 'lugar',
+        nombre: item.dataset.destinoNombre,
+        lat: parseFloat(item.dataset.destinoLat),
+        lng: parseFloat(item.dataset.destinoLng)
+      };
+      mostrarRuta(destino);
+    });
+  });
+  
+  contenedor.querySelectorAll('[data-destino-tipo="calle"]').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = parseInt(item.dataset.destinoId);
+      const paradas = obtenerParadasDeCalle(id);
+      if (paradas.length > 0) {
+        mostrarRuta({ tipo: 'parada', id: paradas[0].id_parada, descripcion: paradas[0].descripcion });
+      } else {
+        speak('No hay paradas en esa calle.', true);
+      }
+    });
+  });
+  
+  contenedor.querySelectorAll('[data-destino-tipo="parada"]').forEach(item => {
+    item.addEventListener('click', () => {
+      mostrarRuta({ tipo: 'parada', id: parseInt(item.dataset.destinoId), descripcion: item.dataset.destinoNombre });
+    });
+  });
+}
+
+// ============================================
+// SISTEMA DE RUTAS
+// ============================================
+
+function encontrarParadaCercanaAUsuario() {
+  if (!userLocation) return null;
+  return allParadas.map(parada => {
+    const distancia = calcularDistancia(userLocation.lat, userLocation.lng, parada.lat, parada.lng);
+    return { ...parada, distancia };
+  }).sort((a, b) => a.distancia - b.distancia)[0];
+}
+
+function calcularRuta(paradaOrigenId, paradaDestinoId) {
+  const lineasOrigen = obtenerLineasDeParada(paradaOrigenId);
+  const lineasDestino = obtenerLineasDeParada(paradaDestinoId);
+  const idsOrigen = new Set(lineasOrigen.map(l => l.id_linea));
+  const idsDestino = new Set(lineasDestino.map(l => l.id_linea));
+  
+  const lineasDirectas = lineasOrigen.filter(l => idsDestino.has(l.id_linea));
+  
+  if (lineasDirectas.length > 0) {
+    return {
+      tipo: 'directa',
+      lineas: lineasDirectas,
+      pasos: [
+        { tipo: 'subir', linea: lineasDirectas[0].nombre, descripcion: `Tomá la línea ${lineasDirectas[0].nombre} desde la parada de origen.` },
+        { tipo: 'bajar', descripcion: `Bajá en la parada destino.` }
+      ]
+    };
+  }
+  
+  for (const lineaOrigen of lineasOrigen) {
+    const paradasLineaOrigen = obtenerParadasDeLinea(lineaOrigen.id_linea).map(p => p.id_parada);
+    for (const paradaTransbordo of paradasLineaOrigen) {
+      const lineasTransbordo = obtenerLineasDeParada(paradaTransbordo);
+      const lineaConex = lineasTransbordo.find(l => idsDestino.has(l.id_linea));
+      if (lineaConex && lineaConex.id_linea !== lineaOrigen.id_linea) {
+        const paradaTransbordoObj = allParadas.find(p => p.id === paradaTransbordo);
+        return {
+          tipo: 'transbordo',
+          pasos: [
+            { tipo: 'subir', linea: lineaOrigen.nombre, descripcion: `Tomá la línea ${lineaOrigen.nombre} desde la parada de origen.` },
+            { tipo: 'transbordo', descripcion: `Bajá en ${paradaTransbordoObj ? paradaTransbordoObj.descripcion : 'parada de transbordo'} y hacé transbordo.` },
+            { tipo: 'subir', linea: lineaConex.nombre, descripcion: `Tomá la línea ${lineaConex.nombre}.` },
+            { tipo: 'bajar', descripcion: `Bajá en la parada destino.` }
+          ]
+        };
+      }
+    }
+  }
+  
+  return {
+    tipo: 'no_disponible',
+    pasos: [{
+      tipo: 'info',
+      descripcion: 'No se encontró una ruta directa con las paradas disponibles. La base de datos actual tiene 25 paradas. En una versión completa, esta función encontrará la ruta óptima.'
+    }]
+  };
+}
+
+function mostrarRuta(destino) {
+  const paradaOrigen = encontrarParadaCercanaAUsuario();
+  
+  if (!paradaOrigen) {
+    document.getElementById('rutaResultado').innerHTML = `
+      <div class="info-text">
+        <strong>&#x26A0;&#xFE0F; No se pudo determinar tu ubicación.</strong><br><br>
+        Activá el GPS o usá el botón "PRUEBA" en el mapa.
+      </div>
+    `;
+    speak('No se pudo determinar tu ubicación. Activá el GPS o usá el botón de prueba.', true);
+    return;
+  }
+  
+  let paradaDestino, distanciaAlDestino;
+  
+  if (destino.tipo === 'lugar') {
+    const paradasCercanasDestino = allParadas.map(parada => {
+      const distancia = calcularDistancia(destino.lat, destino.lng, parada.lat, parada.lng);
+      return { ...parada, distancia };
+    }).sort((a, b) => a.distancia - b.distancia);
+    paradaDestino = paradasCercanasDestino[0];
+    distanciaAlDestino = paradasCercanasDestino[0].distancia;
+  } else if (destino.tipo === 'parada') {
+    paradaDestino = allParadas.find(p => p.id === destino.id);
+    distanciaAlDestino = 0;
+  } else {
+    paradaDestino = encontrarParadaCercanaAUsuario();
+    distanciaAlDestino = 0;
+  }
+  
+  if (!paradaDestino) {
+    document.getElementById('rutaResultado').innerHTML = `
+      <div class="info-text">
+        <strong>&#x26A0;&#xFE0F; No se encontraron paradas cerca del destino.</strong><br><br>
+        El lugar "${destino.nombre || destino.descripcion}" está demasiado lejos.
+      </div>
+    `;
+    speak('No hay paradas cerca del destino.', true);
+    return;
+  }
+  
+  const ruta = calcularRuta(paradaOrigen.id, paradaDestino.id);
+  
+  let html = `
+    <div class="detail-card">
+      <h2>&#x1F5FA; Ruta sugerida</h2>
+      <p><strong>&#x1F4CD; Origen:</strong> Parada más cercana a tu ubicación</p>
+      <p style="font-size: 16px; margin-left: 20px;">${paradaOrigen.descripcion}</p>
+      <p><strong>&#x1F3AF; Destino:</strong> ${destino.nombre || destino.descripcion}</p>
+      ${distanciaAlDestino > 0 ? `<p style="font-size: 16px;">&#x1F6B6; A ${Math.round(distanciaAlDestino)} metros de la parada más cercana</p>` : ''}
+      <p><strong>&#x1F68C; Tipo:</strong> ${ruta.tipo === 'directa' ? 'Directa' : ruta.tipo === 'transbordo' ? 'Con transbordo' : 'No disponible'}</p>
+    </div>
+  `;
+  
+  if (ruta.pasos) {
+    html += '<h2 class="section-title">&#x1F463; Pasos a seguir</h2>';
+    ruta.pasos.forEach((paso, idx) => {
+      let icono = '';
+      if (paso.tipo === 'subir') icono = '&#x1F68C;';
+      if (paso.tipo === 'bajar') icono = '&#x1F6B6;';
+      if (paso.tipo === 'transbordo') icono = '&#x1F504;';
+      if (paso.tipo === 'info') icono = '&#x2139;&#xFE0F;';
+      html += `
+        <div class="ruta-step">
+          <div class="step-number">${icono} Paso ${idx + 1}</div>
+          <div class="step-content">${paso.descripcion}</div>
+        </div>
+      `;
+    });
+    
+    if (distanciaAlDestino > 0 && distanciaAlDestino < 500) {
+      html += `
+        <div class="ruta-step" style="border-left-color: var(--accent-green);">
+          <div class="step-number">&#x1F6B6; Paso final</div>
+          <div class="step-content">Caminá ${Math.round(distanciaAlDestino)} metros hasta llegar a <strong>${destino.nombre}</strong>.</div>
+        </div>
+      `;
+    }
+  }
+  
+  html += `
+    <button class="btn-big" id="btnRepetirRuta" aria-label="Repetir instrucciones" data-announce="Repetir instrucciones">
+      <span class="icon">&#x1F50A;</span><span>REPETIR INSTRUCCIONES</span>
+    </button>
+  `;
+  
+  document.getElementById('rutaResultado').innerHTML = html;
+  
+  const btnRepetir = document.getElementById('btnRepetirRuta');
+  if (btnRepetir) {
+    btnRepetir.addEventListener('click', () => {
+      speak(mensajeVozCompleto, true);
+      vibrate([100, 50, 100]);
+    });
+  }
+  
+  let mensajeVozCompleto = `Ruta sugerida hacia ${destino.nombre || 'el destino'}. `;
+  mensajeVozCompleto += `Desde la parada más cercana a tu ubicación, a ${Math.round(paradaOrigen.distancia || 0)} metros. `;
+  mensajeVozCompleto += `La parada está en ${paradaOrigen.descripcion}. `;
+  
+  if (ruta.tipo === 'directa') {
+    mensajeVozCompleto += `Ruta directa. Tomá la línea ${ruta.lineas[0].nombre}. `;
+    mensajeVozCompleto += `Bajá en la parada ${paradaDestino.descripcion}. `;
+    if (distanciaAlDestino > 0 && distanciaAlDestino < 500) {
+      mensajeVozCompleto += `Luego caminá ${Math.round(distanciaAlDestino)} metros hasta ${destino.nombre}.`;
+    }
+  } else if (ruta.tipo === 'transbordo') {
+    mensajeVozCompleto += `Ruta con transbordo. `;
+    ruta.pasos.forEach((paso, idx) => { mensajeVozCompleto += `Paso ${idx + 1}: ${paso.descripcion} `; });
+    if (distanciaAlDestino > 0 && distanciaAlDestino < 500) {
+      mensajeVozCompleto += `Finalmente, caminá ${Math.round(distanciaAlDestino)} metros hasta ${destino.nombre}.`;
+    }
+  } else {
+    mensajeVozCompleto += ruta.pasos[0].descripcion;
+  }
+  
+  speak(mensajeVozCompleto, true);
+  vibrate([200, 100, 200, 100, 200]);
+}
+
+// ============================================
+// MAPA CON MARCADORES CORREGIDOS
+// ============================================
+
+function inicializarMapa() {
+  if (map) { map.invalidateSize(); return; }
+  
+  map = L.map('map', { center: [-24.7889, -65.4114], zoom: 14, zoomControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(map);
+  
+  const paradasValidas = allParadas.filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng));
+  
+  if (paradasValidas.length === 0) {
+    speak('No hay paradas válidas.', true);
+    return;
+  }
+  
+  paradasValidas.forEach(parada => {
+    // Usar HTML entity en lugar de emoji directo
+    const iconoParada = L.divIcon({
+      className: 'marcador-parada',
+      html: '<div style="background: #FFD700; border: 3px solid #FFFFFF; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); font-weight: bold; color: #000;">&#x1F68F;</div>',
+      iconSize: [35, 35], iconAnchor: [17, 17]
+    });
+    
+    const marker = L.marker([parada.lat, parada.lng], { icon: iconoParada }).addTo(map);
+    const lineas = obtenerLineasDeParada(parada.id);
+    const lineasNombres = lineas.map(l => l.nombre).join(', ');
+    
+    marker.bindPopup(`
+      <div style="font-size: 14px; color: #000; padding: 10px;">
+        <strong>&#x1F4CD; Parada</strong><br>
+        <p style="margin: 8px 0;">${parada.descripcion}</p>
+        <strong>&#x1F68C; Líneas:</strong> ${lineasNombres || 'Sin líneas'}
+      </div>
+    `);
+    
+    marker.on('click', () => {
+      speak(`Parada: ${parada.descripcion}. Líneas: ${lineasNombres || 'Sin líneas'}`, true);
+      vibrate([100, 50, 100]);
+    });
+    
+    markers.push({ marker, parada });
+  });
+  
+  const grupo = L.featureGroup(markers.map(m => m.marker));
+  map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
+  
+  speak(`Mapa cargado con ${paradasValidas.length} paradas.`, true);
+}
+
+// ============================================
+// NAVEGACIÓN
+// ============================================
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  
+  const titles = {
+    menu: 'Menú principal', lineas: 'Buscar líneas', lineaDetalle: 'Detalle de línea',
+    paradas: 'Buscar paradas', paradasCalle: 'Paradas en calle', paradaDetalle: 'Detalle de parada',
+    rutas: 'Cómo llegar', mapa: 'Mapa de paradas', favoritos: 'Favoritos',
+    ayuda: 'Ayuda', config: 'Configuración'
+  };
+  
+  speak(titles[screenId] || screenId, true);
+  vibrate([50]);
+  
+  if (screenId === 'mapa') setTimeout(() => { inicializarMapa(); }, 300);
+  if (screenId === 'favoritos') mostrarFavoritos();
+  if (screenId === 'rutas') {
+    document.getElementById('destinoResults').innerHTML = '';
+    document.getElementById('rutaResultado').innerHTML = '';
+    document.getElementById('destinoSearchInput').value = '';
+  }
+}
+
+// ============================================
+// BÚSQUEDA DE LÍNEAS
+// ============================================
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    config.currentFilter = btn.dataset.filter;
+    speak(`Filtro por ${config.currentFilter === 'numero' ? 'número' : 'ramal'} activado`, true);
+    vibrate([50]);
+    const texto = document.getElementById('lineSearchInput').value;
+    if (texto.trim().length > 0) mostrarLineas(buscarLineas(config.currentFilter, texto));
+  });
+});
+
+const lineSearchInput = document.getElementById('lineSearchInput');
+const lineResults = document.getElementById('lineResults');
+
+lineSearchInput.addEventListener('input', (e) => {
+  mostrarLineas(buscarLineas(config.currentFilter, e.target.value.trim()));
+});
+
+function mostrarLineas(lineas) {
+  if (lineas.length === 0) {
+    lineResults.innerHTML = '<div class="info-text">No se encontraron líneas</div>';
+    speak('No se encontraron líneas', true);
+    return;
+  }
+  
+  lineResults.innerHTML = lineas.map(l => `
+    <div class="result-item" data-linea-id="${l.id_linea}" role="button" tabindex="0" aria-label="Línea ${l.nombre}" data-announce="Línea ${l.nombre}">
+      <div class="badge">&#x1F68C;</div>
+      <div class="info"><h3>${l.nombre}</h3><p>Tocá para ver paradas</p></div>
+    </div>
+  `).join('');
+  
+  speak(`Se encontraron ${lineas.length} líneas`, true);
+  
+  lineResults.querySelectorAll('.result-item').forEach(item => {
+    item.addEventListener('click', () => mostrarDetalleLinea(parseInt(item.dataset.lineaId)));
+  });
+}
+
+function mostrarDetalleLinea(idLinea) {
+  const nombreLinea = obtenerNombreLinea(idLinea);
+  const paradas = obtenerParadasDeLinea(idLinea);
+  
+  document.getElementById('lineaDetalleTitle').textContent = nombreLinea;
+  
+  const btnFav = document.getElementById('btnFavLinea');
+  if (favoritos.includes(idLinea)) {
+    btnFav.classList.add('active');
+    btnFav.innerHTML = '&#x2605;';
+    btnFav.setAttribute('aria-label', 'Quitar de favoritos');
+  } else {
+    btnFav.classList.remove('active');
+    btnFav.innerHTML = '&#x2606;';
+    btnFav.setAttribute('aria-label', 'Agregar a favoritos');
+  }
+  
+  btnFav.onclick = () => {
+    if (favoritos.includes(idLinea)) {
+      favoritos = favoritos.filter(f => f !== idLinea);
+      btnFav.classList.remove('active');
+      btnFav.innerHTML = '&#x2606;';
+      speak('Línea quitada de favoritos', true);
+    } else {
+      favoritos.push(idLinea);
+      btnFav.classList.add('active');
+      btnFav.innerHTML = '&#x2605;';
+      speak('Línea agregada a favoritos', true);
+      playAlert();
+    }
+    localStorage.setItem('wb_favoritos', JSON.stringify(favoritos));
+    vibrate([100, 50, 100]);
+  };
+  
+  if (paradas.length === 0) {
+    document.getElementById('lineaParadasList').innerHTML = '<div class="info-text">No hay paradas para esta línea</div>';
+    speak('No hay paradas para esta línea', true);
+  } else {
+    document.getElementById('lineaParadasList').innerHTML = paradas.map(p => `
+      <div class="stop-item" role="button" tabindex="0" aria-label="${p.descripcion}" data-announce="${p.descripcion}">
+        &#x1F4CD; ${p.descripcion}
+      </div>
+    `).join('');
+    
+    speak(`Línea ${nombreLinea}. Tiene ${paradas.length} paradas.`, true);
+    
+    document.querySelectorAll('#lineaParadasList .stop-item').forEach((item, idx) => {
+      item.addEventListener('click', () => { speak(paradas[idx].descripcion, true); vibrate([100, 50, 100]); });
+    });
+  }
+  
+  playAlert();
+  showScreen('lineaDetalle');
+}
+
+// ============================================
+// BÚSQUEDA DE PARADAS
+// ============================================
+
+const alphabetFilter = document.getElementById('alphabetFilter');
+const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+alphabetFilter.innerHTML = '<button class="letter-btn active" data-letra="TODAS" data-announce="Mostrar todas">TODAS</button>' +
+  letras.map(l => `<button class="letter-btn" data-letra="${l}" data-announce="Filtrar por ${l}">${l}</button>`).join('');
+
+alphabetFilter.addEventListener('click', (e) => {
+  if (e.target.classList.contains('letter-btn')) {
+    document.querySelectorAll('.letter-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    config.currentLetter = e.target.dataset.letra;
+    speak(`Filtro por ${config.currentLetter === 'TODAS' ? 'todas' : config.currentLetter}`, true);
+    vibrate([50]);
+    mostrarCalles(buscarCalles(config.currentLetter, ''));
+  }
+});
+
+const calleSearchInput = document.getElementById('calleSearchInput');
+const calleResults = document.getElementById('calleResults');
+
+calleSearchInput.addEventListener('input', (e) => {
+  mostrarCalles(buscarCalles(config.currentLetter, e.target.value.trim()));
+});
+
+function mostrarCalles(calles) {
+  if (calles.length === 0) {
+    calleResults.innerHTML = '<div class="info-text">No se encontraron calles</div>';
+    speak('No se encontraron calles', true);
+    return;
+  }
+  
+  calleResults.innerHTML = calles.map(c => `
+    <div class="result-item" data-calle-id="${c.id_calle}" data-calle-nombre="${c.nombre}" role="button" tabindex="0" aria-label="Calle ${c.nombre}" data-announce="Calle ${c.nombre}">
+      <div class="badge">&#x1F6E3;</div>
+      <div class="info"><h3>${c.nombre}</h3><p>Tocá para ver paradas</p></div>
+    </div>
+  `).join('');
+  
+  speak(`Se encontraron ${calles.length} calles`, true);
+  
+  calleResults.querySelectorAll('.result-item').forEach(item => {
+    item.addEventListener('click', () => {
+      mostrarParadasDeCalle(parseInt(item.dataset.calleId), item.dataset.calleNombre);
+    });
+  });
+}
+
+function mostrarParadasDeCalle(idCalle, nombreCalle) {
+  const paradas = obtenerParadasDeCalle(idCalle);
+  document.getElementById('calleTitle').textContent = nombreCalle;
+  
+  if (paradas.length === 0) {
+    document.getElementById('paradasCalleList').innerHTML = '<div class="info-text">No hay paradas en esta calle</div>';
+    speak('No hay paradas en esta calle', true);
+  } else {
+    document.getElementById('paradasCalleList').innerHTML = paradas.map(p => `
+      <div class="stop-item" data-parada-id="${p.id_parada}" role="button" tabindex="0" aria-label="${p.descripcion}" data-announce="${p.descripcion}">
+        &#x1F4CD; ${p.descripcion}
+      </div>
+    `).join('');
+    speak(`Hay ${paradas.length} paradas en ${nombreCalle}.`, true);
+    document.querySelectorAll('#paradasCalleList .stop-item').forEach(item => {
+      item.addEventListener('click', () => mostrarDetalleParada(parseInt(item.dataset.paradaId)));
+    });
+  }
+  
+  playAlert();
+  showScreen('paradasCalle');
+}
+
+function mostrarDetalleParada(idParada) {
+  const results = db.exec(`SELECT descripcion_ubicacion, referencia_accesibilidad FROM paradas WHERE id_parada = ?`, [idParada]);
+  if (results.length === 0) return;
+  
+  const descripcion = results[0].values[0][0];
+  const accesibilidad = results[0].values[0][1];
+  const lineas = obtenerLineasDeParada(idParada);
+  
+  const lineasHtml = lineas.map(l => `
+    <div class="linea-item" role="button" tabindex="0" aria-label="Línea ${l.nombre}" data-announce="Línea ${l.nombre}">
+      <span class="icon">&#x1F68C;</span><span>${l.nombre}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('paradaDetalleContent').innerHTML = `
+    <div class="detail-card"><h2>&#x1F4CD; Ubicación</h2><p>${descripcion}</p></div>
+    <div class="detail-card"><h2>&#x267F; Accesibilidad</h2><p>${accesibilidad || 'Información no disponible'}</p></div>
+    <div class="detail-card"><h2>&#x1F68C; Líneas que pasan</h2>${lineas.length > 0 ? lineasHtml : '<p>No hay líneas registradas</p>'}</div>
+  `;
+  
+  document.querySelectorAll('.linea-item').forEach(item => {
+    item.addEventListener('click', () => {
+      speak(`Línea ${item.querySelector('span:last-child').textContent}`, true);
+      vibrate([100, 50, 100]);
+    });
+  });
+  
+  let textoVoz = `Parada: ${descripcion}. `;
+  if (accesibilidad) textoVoz += `Accesibilidad: ${accesibilidad}. `;
+  if (lineas.length > 0) textoVoz += `Líneas: ${lineas.map(l => l.nombre).join(', ')}`;
+  
+  speak(textoVoz, true);
+  playAlert();
+  vibrate([200, 100, 200]);
+  showScreen('paradaDetalle');
+}
+
+// ============================================
+// BÚSQUEDA DE DESTINOS
+// ============================================
+
+const destinoSearchInput = document.getElementById('destinoSearchInput');
+const destinoResults = document.getElementById('destinoResults');
+
+destinoSearchInput.addEventListener('input', async (e) => {
+  const texto = e.target.value.trim();
+  if (texto.length < 2) { destinoResults.innerHTML = ''; return; }
+  const destinos = await buscarDestinos(texto);
+  mostrarDestinos(destinos);
+});
+
+// ============================================
+// FAVORITOS
+// ============================================
+
+function mostrarFavoritos() {
+  const list = document.getElementById('favoritosList');
+  if (favoritos.length === 0) {
+    list.innerHTML = '<div class="info-text">No tenés líneas favoritas. Agregá desde LÍNEAS.</div>';
+    speak('No tenés favoritos', true);
+    return;
+  }
+  
+  const lineasFav = favoritos.map(id => ({ id_linea: id, nombre: obtenerNombreLinea(id) })).filter(l => l.nombre);
+  
+  list.innerHTML = lineasFav.map(l => `
+    <div class="result-item" data-linea-id="${l.id_linea}" role="button" tabindex="0" aria-label="Favorita ${l.nombre}" data-announce="Favorita ${l.nombre}">
+      <div class="badge">&#x2B50;</div>
+      <div class="info"><h3>${l.nombre}</h3><p>Tocá para ver paradas</p></div>
+    </div>
+  `).join('');
+  
+  speak(`Tenés ${lineasFav.length} favoritos`, true);
+  
+  list.querySelectorAll('.result-item').forEach(item => {
+    item.addEventListener('click', () => mostrarDetalleLinea(parseInt(item.dataset.lineaId)));
+  });
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+
+document.getElementById('btnEnter').addEventListener('click', () => {
+  playAlert();
+  speak('Bienvenido a Walk Boundless. Transporte público accesible.', true);
+  vibrate([100, 50, 100, 50, 100]);
+  showScreen('menu');
+});
+
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('click', () => { playAlert(); showScreen(item.dataset.target); });
+});
+
+document.getElementById('backFromLineas').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromLineaDetalle').addEventListener('click', () => showScreen('lineas'));
+document.getElementById('backFromParadas').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromParadasCalle').addEventListener('click', () => showScreen('paradas'));
+document.getElementById('backFromParadaDetalle').addEventListener('click', () => showScreen('paradasCalle'));
+document.getElementById('backFromRutas').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromMapa').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromFavoritos').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromAyuda').addEventListener('click', () => showScreen('menu'));
+document.getElementById('backFromConfig').addEventListener('click', () => showScreen('menu'));
+
+document.getElementById('btnConfig').addEventListener('click', () => showScreen('config'));
+document.getElementById('btnSlowVoice').addEventListener('click', () => { config.voiceRate = 0.7; speak('Voz lenta', true); playAlert(); });
+document.getElementById('btnNormalVoice').addEventListener('click', () => { config.voiceRate = 1.0; speak('Voz normal', true); playAlert(); });
+document.getElementById('btnFastVoice').addEventListener('click', () => { config.voiceRate = 1.4; speak('Voz rápida', true); playAlert(); });
+document.getElementById('btnSaveConfig').addEventListener('click', () => showScreen('menu'));
+
+document.getElementById('btnVoiceTest').addEventListener('click', () => {
+  speak('Hola. Soy Walk Boundless. Puedo ayudarte a encontrar líneas y paradas. Usá los botones de micrófono para buscar por voz.', true);
+  vibrate([100, 50, 100, 50, 100]);
+});
+
+document.getElementById('btnReadHelp').addEventListener('click', () => {
+  speak('Walk Boundless. En LÍNEAS buscá por número o ramal. En PARADAS buscá por calle. En CÓMO LLEGAR decí a dónde querés ir. Usá los micrófonos para buscar por voz. En el MAPA usá Ubicación y Cercanas.', true);
+  vibrate([200, 100, 200]);
+});
+
+document.getElementById('btnMiUbicacion').addEventListener('click', mostrarMiUbicacion);
+document.getElementById('btnCercanas').addEventListener('click', mostrarParadasCercanas);
+document.getElementById('btnUbicacionPrueba').addEventListener('click', usarUbicacionPrueba);
+document.getElementById('btnZoomIn').addEventListener('click', () => { if (map) { map.zoomIn(); speak('Acercando', true); } });
+
+// MICRÓFONOS
+document.getElementById('micLineas').addEventListener('click', () => {
+  currentMicBtn = document.getElementById('micLineas');
+  iniciarReconocimiento(lineSearchInput, (transcript) => {
+    setTimeout(() => mostrarLineas(buscarLineas(config.currentFilter, transcript)), 500);
+  });
+});
+
+document.getElementById('micParadas').addEventListener('click', () => {
+  currentMicBtn = document.getElementById('micParadas');
+  iniciarReconocimiento(calleSearchInput, (transcript) => {
+    setTimeout(() => mostrarCalles(buscarCalles(config.currentLetter, transcript)), 500);
+  });
+});
+
+document.getElementById('micDestino').addEventListener('click', () => {
+  currentMicBtn = document.getElementById('micDestino');
+  iniciarReconocimiento(destinoSearchInput, async (transcript) => {
+    setTimeout(async () => {
+      const destinos = await buscarDestinos(transcript);
+      mostrarDestinos(destinos);
+    }, 500);
+  });
+});
+
+// ============================================
+// INICIALIZACIÓN
+// ============================================
+
+window.addEventListener('load', async () => {
+  await inicializarDB();
+  
+  const soportaVoz = inicializarReconocimiento();
+  if (!soportaVoz) {
+    document.querySelectorAll('.mic-btn').forEach(btn => btn.style.display = 'none');
+  }
+  
+  if (synth) { synth.getVoices(); synth.onvoiceschanged = () => synth.getVoices(); }
+  
+  mostrarCalles(buscarCalles('TODAS', ''));
+  setupHoverAnnouncements();
+  
+  setTimeout(() => {
+    speak('Walk Boundless. App de transporte público accesible con 25 paradas. Tocá ingresar para comenzar.', true);
+  }, 500);
+});
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, false);
+</script>
+
+</body>
+</html>
