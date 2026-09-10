@@ -6,7 +6,10 @@
 // Ahora, cada una hace un pedido (fetch) al backend, que es quien
 // realmente le habla a la base de datos en Neon.
 
-const API_URL = 'http://localhost:3000/api';
+// La URL de la API se toma de una variable de entorno (configurada por
+// Vite), con un valor por defecto para cuando estás en tu computadora
+// sin ese archivo configurado.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Función auxiliar interna: hace el fetch, controla errores de red
 // y devuelve siempre JSON (o null si algo salió mal).
