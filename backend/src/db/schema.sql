@@ -31,3 +31,6 @@ CREATE TABLE parada_linea (
     id_linea INTEGER REFERENCES lineas(id_linea),
     PRIMARY KEY (id_parada, id_linea)
 );
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_calles_nombre_trgm ON calles USING gin (nombre gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_paradas_descripcion_trgm ON paradas USING gin (descripcion_ubicacion gin_trgm_ops);

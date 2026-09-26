@@ -25,9 +25,17 @@ router.get('/', async (req, res) => {
       return res.json(resultado.rows);
     }
 
+    // Búsqueda tolerante a errores: combina coincidencia de texto exacto
+    // (ILIKE) con similitud por trigramas (pg_trgm), para encontrar la
+    // calle aunque el texto tenga errores de tipeo o de transcripción
+    // por voz. Los resultados más parecidos aparecen primero.
     const resultado = await pool.query(
-      'SELECT id_calle, nombre FROM calles WHERE UPPER(nombre) LIKE $1 ORDER BY nombre',
-      [`%${texto.toUpperCase()}%`]
+      `SELECT id_calle, nombre
+       FROM calles
+       WHERE nombre ILIKE $2 OR similarity(lower(nombre), lower($1)) > 0.25
+       ORDER BY similarity(lower(nombre), lower($1)) DESC, nombre
+       LIMIT 15`,
+      [texto, `%${texto}%`]
     );
     res.json(resultado.rows);
   } catch (error) {

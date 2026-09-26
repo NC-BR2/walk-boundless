@@ -70,8 +70,12 @@ router.get('/', async (req, res) => {
   // 3. Calles que coincidan con el texto buscado
   try {
     const callesResultado = await pool.query(
-      'SELECT id_calle, nombre FROM calles WHERE UPPER(nombre) LIKE $1 ORDER BY nombre',
-      [`%${queryUpper}%`]
+      `SELECT id_calle, nombre
+       FROM calles
+       WHERE nombre ILIKE $2 OR similarity(lower(nombre), lower($1)) > 0.3
+       ORDER BY similarity(lower(nombre), lower($1)) DESC, nombre
+       LIMIT 8`,
+      [texto, `%${texto}%`]
     );
     callesResultado.rows.forEach((calle) => {
       destinos.push({
@@ -89,8 +93,12 @@ router.get('/', async (req, res) => {
   // 4. Paradas cuya descripción coincida con el texto buscado
   try {
     const paradasResultado = await pool.query(
-      'SELECT id_parada, descripcion_ubicacion FROM paradas WHERE UPPER(descripcion_ubicacion) LIKE $1',
-      [`%${queryUpper}%`]
+      `SELECT id_parada, descripcion_ubicacion
+       FROM paradas
+       WHERE descripcion_ubicacion ILIKE $2 OR similarity(lower(descripcion_ubicacion), lower($1)) > 0.15
+       ORDER BY similarity(lower(descripcion_ubicacion), lower($1)) DESC
+       LIMIT 8`,
+      [texto, `%${texto}%`]
     );
     paradasResultado.rows.forEach((parada) => {
       destinos.push({
