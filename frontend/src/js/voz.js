@@ -2,6 +2,7 @@
 // VOZ: síntesis (hablar) y reconocimiento (escuchar)
 // ============================================
 import { config, state } from './config.js';
+import { ICONO_MIC, ICONO_ALTAVOZ } from './iconos.js';
 
 const synth = window.speechSynthesis;
 let hoverTimeout = null;
@@ -30,6 +31,7 @@ export function speak(text, priority = false) {
 
   const indicator = document.getElementById('voiceIndicator');
   indicator.classList.add('active');
+  indicator.innerHTML = ICONO_ALTAVOZ;
   utterance.onend = () => { indicator.classList.remove('active'); };
   utterance.onerror = () => { indicator.classList.remove('active'); };
 
@@ -53,6 +55,7 @@ export function speakHover(text) {
 
     const indicator = document.getElementById('voiceIndicator');
     indicator.classList.add('active');
+    indicator.innerHTML = ICONO_ALTAVOZ;
     utterance.onend = () => indicator.classList.remove('active');
     utterance.onerror = () => indicator.classList.remove('active');
 
@@ -108,11 +111,10 @@ export function inicializarReconocimiento() {
     state.isListening = true;
     if (currentMicBtn) {
       currentMicBtn.classList.add('listening');
-      currentMicBtn.innerHTML = '🔴';
     }
     const indicator = document.getElementById('voiceIndicator');
     indicator.classList.add('active');
-    indicator.innerHTML = '🎤';
+    indicator.innerHTML = ICONO_MIC;
   };
 
   recognition.onresult = (event) => {
@@ -137,11 +139,10 @@ export function inicializarReconocimiento() {
     state.isListening = false;
     if (currentMicBtn) {
       currentMicBtn.classList.remove('listening');
-      currentMicBtn.innerHTML = '🎤';
     }
     const indicator = document.getElementById('voiceIndicator');
     indicator.classList.remove('active');
-    indicator.innerHTML = '🔊';
+    indicator.innerHTML = ICONO_ALTAVOZ;
 
     setTimeout(() => {
       if (currentInput && currentInput.value) {

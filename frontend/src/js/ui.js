@@ -11,6 +11,7 @@ import {
   obtenerDetalleParada,
 } from './api.js';
 import { showScreen } from './navegacion.js';
+import { ICONO_ESTRELLA_VACIA, ICONO_ESTRELLA_LLENA } from './iconos.js';
 
 // ============================================
 // LÍNEAS
@@ -51,24 +52,23 @@ export async function mostrarDetalleLinea(idLinea, nombreLinea) {
   const btnFav = document.getElementById('btnFavLinea');
   if (state.favoritos.includes(idLinea)) {
     btnFav.classList.add('active');
-    btnFav.innerHTML = '★';
+    btnFav.innerHTML = ICONO_ESTRELLA_LLENA;
     btnFav.setAttribute('aria-label', 'Quitar de favoritos');
   } else {
     btnFav.classList.remove('active');
-    btnFav.innerHTML = '☆';
+    btnFav.innerHTML = ICONO_ESTRELLA_VACIA;
     btnFav.setAttribute('aria-label', 'Agregar a favoritos');
   }
-
   btnFav.onclick = () => {
     if (state.favoritos.includes(idLinea)) {
       state.favoritos = state.favoritos.filter((f) => f !== idLinea);
       btnFav.classList.remove('active');
-      btnFav.innerHTML = '☆';
+      btnFav.innerHTML = ICONO_ESTRELLA_VACIA;
       speak('Línea quitada de favoritos', true);
     } else {
       state.favoritos.push(idLinea);
       btnFav.classList.add('active');
-      btnFav.innerHTML = '★';
+      btnFav.innerHTML = ICONO_ESTRELLA_LLENA;
       speak('Línea agregada a favoritos', true);
       playAlert();
     }

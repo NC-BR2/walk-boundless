@@ -20,6 +20,7 @@ import { showScreen } from './navegacion.js';
 import { buscarLineas, buscarCalles, buscarDestinos } from './api.js';
 import { mostrarLineas, mostrarCalles, setupBusquedaLineas, setupBusquedaCalles } from './ui.js';
 import { mostrarDestinos, setupBusquedaDestinos } from './destinos.js';
+import { ICONO_MIC } from './iconos.js';
 
 // ============================================
 // PANTALLA DE ENTRADA Y MENÚ PRINCIPAL
@@ -174,6 +175,8 @@ window.addEventListener('load', () => {
   setupBusquedaCalles();
   setupBusquedaDestinos();
   setupHoverAnnouncements();
+  setupHoverAnnouncements();
+  document.querySelectorAll('.mic-btn').forEach((btn) => { btn.innerHTML = ICONO_MIC; });
 
   const soportaVoz = inicializarReconocimiento();
   if (!soportaVoz) {
