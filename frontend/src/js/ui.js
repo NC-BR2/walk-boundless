@@ -153,7 +153,7 @@ export function setupBusquedaCalles() {
   });
 }
 
-export async function mostrarCalles(calles) {
+export async function mostrarCalles(calles, anunciar = true) {
   const calleResults = document.getElementById('calleResults');
 
   if (calles.length === 0) {
@@ -173,7 +173,7 @@ export async function mostrarCalles(calles) {
     )
     .join('');
 
-  speak(`Se encontraron ${calles.length} calles`, true);
+  if (anunciar) speak(`Se encontraron ${calles.length} calles`, true);
 
   calleResults.querySelectorAll('.result-item').forEach((item) => {
     item.addEventListener('click', () => {

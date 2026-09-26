@@ -169,10 +169,11 @@ document.addEventListener(
 // INICIALIZACIÓN
 // ============================================
 
-window.addEventListener('load', async () => {
+window.addEventListener('load', () => {
   setupBusquedaLineas();
   setupBusquedaCalles();
   setupBusquedaDestinos();
+  setupHoverAnnouncements();
 
   const soportaVoz = inicializarReconocimiento();
   if (!soportaVoz) {
@@ -184,10 +185,13 @@ window.addEventListener('load', async () => {
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
   }
 
-  mostrarCalles(await buscarCalles('TODAS', ''));
-  setupHoverAnnouncements();
-
+  // El saludo se dice de inmediato, sin esperar ningún pedido de red.
   setTimeout(() => {
-    speak('Walk Boundless. App de transporte público accesible con 25 paradas. Tocá ingresar para comenzar.', true);
+    speak('Walk Boundless. App de transporte público accesible. Tocá ingresar para comenzar.', true);
   }, 500);
+
+  // La carga de calles pasa a ser "de fondo": no bloquea nada de lo anterior,
+  // y si tarda (por ejemplo, porque el backend estaba dormido), el usuario
+  // ya puede estar usando la app mientras tanto.
+  buscarCalles('TODAS', '').then((calles) => mostrarCalles(calles, false));
 });
