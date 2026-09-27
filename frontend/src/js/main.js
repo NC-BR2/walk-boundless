@@ -21,6 +21,7 @@ import { buscarLineas, buscarCalles, buscarDestinos } from './api.js';
 import { mostrarLineas, mostrarCalles, setupBusquedaLineas, setupBusquedaCalles } from './ui.js';
 import { mostrarDestinos, setupBusquedaDestinos } from './destinos.js';
 import { ICONO_MIC } from './iconos.js';
+import { asegurarDatosLocales } from './api.js';
 
 // ============================================
 // PANTALLA DE ENTRADA Y MENÚ PRINCIPAL
@@ -216,5 +217,11 @@ window.addEventListener('load', () => {
   // La carga de calles pasa a ser "de fondo": no bloquea nada de lo anterior,
   // y si tarda (por ejemplo, porque el backend estaba dormido), el usuario
   // ya puede estar usando la app mientras tanto.
+  asegurarDatosLocales().then((resultado) => {
+    if (!resultado.exito && resultado.primeraVez) {
+      speak('Necesitás conexión a internet la primera vez que usás la app.', true);
+    }
+  });
+
   buscarCalles('TODAS', '').then((calles) => mostrarCalles(calles, false));
 });

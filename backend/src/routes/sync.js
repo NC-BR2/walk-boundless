@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../db/conexion.js';
+import { lugaresInteresSalta } from '../data/lugaresInteres.js';
 
 const router = Router();
 
@@ -20,14 +21,12 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({
-      version: Date.now(), // marca de tiempo: sirve para que el dispositivo
-                            // sepa cuándo fue la última vez que se generó
-                            // esta copia, útil más adelante para decidir
-                            // si vale la pena volver a descargar todo.
+      version: Date.now(),
       calles: calles.rows,
       lineas: lineas.rows,
       paradas: paradas.rows,
       relaciones: relaciones.rows,
+      lugares: lugaresInteresSalta,
     });
   } catch (error) {
     console.error('Error en GET /api/sync:', error.message);
