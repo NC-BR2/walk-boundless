@@ -23,8 +23,8 @@
     font-size: 20px;
   }
 
-  #app {
-    width: 100%; height: 100vh;
+#app {
+    width: 100%; height: 100vh; height: 100dvh;
     max-width: 480px;
     margin: 0 auto;
     background: var(--bg-dark);
@@ -383,10 +383,20 @@
 
   .fav-btn.active { background: var(--accent-yellow); }
 
-  .alphabet-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.alphabet-filter {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  margin: 8px 0;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
 
-  .letter-btn {
-    width: 42px; height: 42px;
+.letter-btn {
+    flex-shrink: 0;
+    min-width: 42px; height: 42px;
+    padding: 0 10px;
     background: var(--bg-panel);
     color: var(--accent-yellow);
     border: 2px solid var(--accent-yellow);
@@ -421,8 +431,9 @@
     z-index: 1000;
   }
 
-  .map-btn {
+.map-btn {
     flex: 1;
+    min-width: 0;
     min-height: 60px;
     background: var(--accent-yellow);
     color: var(--text-dark);
@@ -489,3 +500,13 @@
     70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 102, 255, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
   }
+  @media (max-height: 700px) {
+  .menu-item { min-height: 105px; padding: 12px; }
+  .menu-item .icon { font-size: 36px; }
+  .btn-big { min-height: 70px; padding: 14px; margin: 6px 0; }
+}
+
+@media (max-height: 600px) {
+  .menu-item { min-height: 85px; }
+  .menu-item .icon { font-size: 30px; }
+}

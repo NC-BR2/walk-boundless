@@ -189,9 +189,29 @@ window.addEventListener('load', () => {
   }
 
   // El saludo se dice de inmediato, sin esperar ningún pedido de red.
-  setTimeout(() => {
+  // PERO: muchos navegadores de celular bloquean el audio automático
+  // hasta que la persona toque la pantalla al menos una vez. Por eso,
+  // además del intento inmediato, dejamos un "plan B" que dice el
+  // mismo saludo apenas ocurra el primer toque en cualquier parte de
+  // la pantalla — salvo que ese primer toque sea justo el botón
+  // "INGRESAR", que ya tiene su propio mensaje de bienvenida.
+  let yaSaludo = false;
+  function saludarBienvenida() {
+    if (yaSaludo) return;
+    yaSaludo = true;
     speak('Walk Boundless. App de transporte público accesible. Tocá ingresar para comenzar.', true);
-  }, 500);
+  }
+
+  setTimeout(saludarBienvenida, 500);
+
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.target.closest('#btnEnter')) return;
+      saludarBienvenida();
+    },
+    { once: true }
+  );
 
   // La carga de calles pasa a ser "de fondo": no bloquea nada de lo anterior,
   // y si tarda (por ejemplo, porque el backend estaba dormido), el usuario
