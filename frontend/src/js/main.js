@@ -26,6 +26,16 @@ import { asegurarDatosLocales } from './api.js';
 // ============================================
 // PANTALLA DE ENTRADA Y MENÚ PRINCIPAL
 // ============================================
+// Registrar el Service Worker (habilita el modo offline de la página
+// en sí). Si el navegador no lo soporta, o falla el registro, la app
+// sigue funcionando normal, solo que sin esta capa extra.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+      console.warn('No se pudo registrar el service worker:', error.message);
+    });
+  });
+}
 
 document.getElementById('btnEnter').addEventListener('click', () => {
   playAlert();
