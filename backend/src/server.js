@@ -5,6 +5,7 @@ import lineasRouter from './routes/lineas.js';
 import callesRouter from './routes/calles.js';
 import paradasRouter from './routes/paradas.js';
 import destinosRouter from './routes/destinos.js';
+import syncRouter from './routes/sync.js';
 
 const app = express();
 const PUERTO = 3000;
@@ -34,6 +35,7 @@ app.use('/api/lineas', lineasRouter);
 app.use('/api/calles', callesRouter);
 app.use('/api/paradas', paradasRouter);
 app.use('/api/destinos', destinosRouter);
+app.use('/api/sync', syncRouter);
 app.listen(PUERTO, async () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PUERTO}`);
   await probarConexion();
