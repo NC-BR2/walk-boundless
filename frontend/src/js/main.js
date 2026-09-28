@@ -29,7 +29,7 @@ import { asegurarDatosLocales } from './api.js';
 // Registrar el Service Worker (habilita el modo offline de la página
 // en sí). Si el navegador no lo soporta, o falla el registro, la app
 // sigue funcionando normal, solo que sin esta capa extra.
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').catch((error) => {
       console.warn('No se pudo registrar el service worker:', error.message);

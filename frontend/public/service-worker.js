@@ -45,7 +45,19 @@ self.addEventListener('fetch', (evento) => {
           }
           return respuestaDeRed;
         })
-        .catch(() => respuestaGuardada);
+        .catch(async () => {
+          // La red falló. En orden de preferencia:
+          // 1) la copia guardada de este mismo archivo, si existe;
+          // 2) si es una carga de página, la página de inicio guardada;
+          // 3) una respuesta "sin conexión" válida, para que el navegador
+          //    nunca reciba un valor vacío (eso era lo que causaba el error).
+          if (respuestaGuardada) return respuestaGuardada;
+          if (request.mode === 'navigate') {
+            const inicio = await caches.match('/');
+            if (inicio) return inicio;
+          }
+          return new Response('Sin conexión', { status: 503, statusText: 'Sin conexión' });
+        });
 
       // Si ya había una copia guardada, la devolvemos al instante
       // (más rápido) y de paso actualizamos el caché de fondo. Si es
