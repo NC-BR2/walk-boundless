@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Walk Boundless - Transporte Público</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+  <script type="module" crossorigin src="/assets/index-CYTQ4r1W.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DtYBDZ5X.css">
+</head>
+<body>
+
+<div id="app" role="application" aria-label="Walk Boundless - Transporte Público">
+
+  <div class="voice-indicator" id="voiceIndicator" aria-hidden="true"></div>
+
+  <!-- SPLASH -->
+  <div class="screen active" id="splash" role="region" aria-label="Pantalla de inicio">
+    <div class="splash-logo"><span style="font-size: 90px;">&#x1F6B6;</span></div>
+    <h1 class="splash-title">Walk Boundless</h1>
+    <p class="splash-sub">Transporte Público Accesible</p>
+    <button class="btn-big" id="btnEnter" aria-label="Entrar a la aplicación" data-announce="Ingresar a la aplicación">
+      <span class="icon">&#x25B6;</span><span>INGRESAR</span>
+    </button>
+  </div>
+
+  <!-- MENÚ -->
+  <div class="screen" id="menu" role="region" aria-label="Menú principal">
+    <div class="header">
+      <h1>&#x1F6B6; Walk Boundless</h1>
+      <button class="btn-icon" id="btnConfig" aria-label="Configuración" data-announce="Configuración">&#x2699;</button>
+    </div>
+    <div class="status-bar">&#x1F4CD; Macrocentro de Salta Capital</div>
+    <div class="menu-grid">
+      <div class="menu-item" data-target="lineas" role="button" tabindex="0" aria-label="Buscar líneas" data-announce="Líneas">
+        <span class="icon">&#x1F68C;</span><span class="label">LÍNEAS</span>
+      </div>
+      <div class="menu-item blue" data-target="paradas" role="button" tabindex="0" aria-label="Buscar paradas" data-announce="Paradas">
+        <span class="icon">&#x1F68F;</span><span class="label">PARADAS</span>
+      </div>
+      <div class="menu-item purple" data-target="rutas" role="button" tabindex="0" aria-label="Cómo llegar" data-announce="Cómo llegar">
+        <span class="icon">&#x1F5FA;</span><span class="label">CÓMO LLEGAR</span>
+      </div>
+      <div class="menu-item green" data-target="mapa" role="button" tabindex="0" aria-label="Mapa" data-announce="Mapa">
+        <span class="icon">&#x1F5FA;</span><span class="label">MAPA</span>
+      </div>
+      <div class="menu-item red" data-target="favoritos" role="button" tabindex="0" aria-label="Favoritos" data-announce="Favoritos">
+        <span class="icon">&#x2B50;</span><span class="label">FAVORITOS</span>
+      </div>
+      <div class="menu-item" style="background: var(--accent-orange); color: var(--text-dark);" data-target="ayuda" role="button" tabindex="0" aria-label="Ayuda" data-announce="Ayuda">
+        <span class="icon">&#x2753;</span><span class="label">AYUDA</span>
+      </div>
+    </div>
+    <button class="btn-big dark" id="btnVoiceTest" aria-label="Probar voz" data-announce="Probar voz">
+      <span class="icon">&#x1F50A;</span><span>PROBAR VOZ</span>
+    </button>
+  </div>
+
+  <!-- LÍNEAS -->
+  <div class="screen" id="lineas" role="region" aria-label="Buscar líneas">
+    <div class="header">
+      <button class="btn-icon" id="backFromLineas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68C; ¿Qué línea necesitás?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="filter-section">
+      <h3>Filtrar por:</h3>
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="numero" data-announce="Filtrar por número">&#x1F522; NÚMERO</button>
+        <button class="filter-btn" data-filter="ramal" data-announce="Filtrar por ramal">&#x1F524; RAMAL</button>
+      </div>
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="lineSearchInput" placeholder="Buscá tu línea..." aria-label="Buscar línea" data-announce="Campo de búsqueda de líneas">
+      <button class="mic-btn" id="micLineas" aria-label="Buscar por voz" data-announce="Buscar por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="lineResults"></div>
+  </div>
+
+  <!-- DETALLE LÍNEA -->
+  <div class="screen" id="lineaDetalle" role="region" aria-label="Detalle de línea">
+    <div class="header">
+      <button class="btn-icon" id="backFromLineaDetalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1 id="lineaDetalleTitle">Línea</h1>
+      <button class="fav-btn" id="btnFavLinea" aria-label="Favoritos" data-announce="Favoritos">&#x2606;</button>
+    </div>
+    <div class="alert-banner">Seleccioná una parada para ver su ubicación</div>
+    <div class="results-list" id="lineaParadasList"></div>
+  </div>
+
+  <!-- PARADAS -->
+  <div class="screen" id="paradas" role="region" aria-label="Buscar paradas">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68F; ¿En qué calle estás?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="filter-section">
+      <h3>Filtrar por inicial:</h3>
+      <div class="alphabet-filter" id="alphabetFilter"></div>
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="calleSearchInput" placeholder="Buscá tu calle..." aria-label="Buscar calle" data-announce="Campo de búsqueda de calles">
+      <button class="mic-btn" id="micParadas" aria-label="Buscar por voz" data-announce="Buscar por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="calleResults"></div>
+  </div>
+
+  <!-- PARADAS EN CALLE -->
+  <div class="screen" id="paradasCalle" role="region" aria-label="Paradas en calle">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadasCalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1 id="calleTitle">Calle</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="alert-banner">Seleccioná la parada exacta</div>
+    <div class="results-list" id="paradasCalleList"></div>
+  </div>
+
+  <!-- DETALLE PARADA -->
+  <div class="screen" id="paradaDetalle" role="region" aria-label="Detalle de parada">
+    <div class="header">
+      <button class="btn-icon" id="backFromParadaDetalle" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F68F; Parada</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div id="paradaDetalleContent"></div>
+  </div>
+
+  <!-- CÓMO LLEGAR -->
+  <div class="screen" id="rutas" role="region" aria-label="Cómo llegar">
+    <div class="header">
+      <button class="btn-icon" id="backFromRutas" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F5FA; ¿A dónde querés ir?</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="info-text">
+      <strong>&#x1F4CD; Paso 1:</strong> Buscá tu destino. La app te dirá qué línea tomar desde tu ubicación.
+    </div>
+    <div class="search-box-container">
+      <input type="text" class="search-box" id="destinoSearchInput" placeholder="Ej: Plaza, Banco, Escuela..." aria-label="Buscar destino" data-announce="Campo de búsqueda de destino">
+      <button class="mic-btn" id="micDestino" aria-label="Buscar por voz" data-announce="Buscar destino por voz">&#x1F3A4;</button>
+    </div>
+    <div class="results-list" id="destinoResults"></div>
+    <div id="rutaResultado" style="margin-top: 15px;"></div>
+  </div>
+
+  <!-- MAPA -->
+  <div class="screen" id="mapa" role="region" aria-label="Mapa">
+    <div class="header">
+      <button class="btn-icon" id="backFromMapa" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x1F5FA; Mapa de Paradas</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="status-bar" id="mapStatus">Mostrando todas las paradas</div>
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="map-controls">
+        <button class="map-btn" id="btnMiUbicacion" data-announce="Mi ubicación"><span>&#x1F4CD;</span><span>UBICACIÓN</span></button>
+        <button class="map-btn" id="btnCercanas" data-announce="Paradas cercanas"><span>&#x1F50D;</span><span>CERCANAS</span></button>
+        <button class="map-btn" id="btnUbicacionPrueba" style="background: var(--accent-orange);" data-announce="Ubicación de prueba"><span>&#x1F9EA;</span><span>PRUEBA</span></button>
+        <button class="map-btn" id="btnZoomIn" data-announce="Acercar"><span>&#x2795;</span></button>
+      </div>
+    </div>
+    <div class="info-text" style="margin-top: 10px;">
+      <strong>&#x1F4A1; Consejo:</strong> Tocá cualquier marcador para escuchar información.
+    </div>
+  </div>
+
+  <!-- FAVORITOS -->
+  <div class="screen" id="favoritos" role="region" aria-label="Favoritos">
+    <div class="header">
+      <button class="btn-icon" id="backFromFavoritos" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2B50; Mis Favoritos</h1>
+      <div style="width:55px"></div>
+    </div>
+    <div class="results-list" id="favoritosList"></div>
+  </div>
+
+  <!-- AYUDA -->
+<div class="screen" id="ayuda" role="region" aria-label="Ayuda">
+    <div class="header">
+      <button class="btn-icon" id="backFromAyuda" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2753; Ayuda</h1>
+      <div style="width:55px"></div>
+    </div>
+    <button class="btn-big" id="btnReadHelp" aria-label="Leer ayuda" data-announce="Leer ayuda en voz alta">
+      <span class="icon">&#x1F50A;</span><span>LEER EN VOZ ALTA</span>
+    </button>
+    <div class="info-text">
+      <strong>Bienvenido a Walk Boundless</strong><br><br>
+      Esta app te ayuda a navegar el transporte público del macrocentro de Salta Capital.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F3A4; ENTRADA DE VOZ</strong><br><br>
+      Tocá el botón de micrófono junto a cada buscador para hablar en lugar de escribir.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F68C; LÍNEAS</strong><br><br>
+      Buscá tu línea por número o ramal. Podés guardar tus favoritas.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F68F; PARADAS</strong><br><br>
+      Buscá por calle. Te mostraremos las paradas y qué líneas pasan.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F5FA; CÓMO LLEGAR</strong><br><br>
+      Decile a la app a dónde querés ir y te indicará qué línea tomar. Busca en el mapa, lugares predefinidos y la base de datos.
+    </div>
+    <div class="info-text">
+      <strong>&#x1F5FA; MAPA</strong><br><br>
+      Visualizá todas las paradas. Usá "Mi Ubicación" y "Cercanas".
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="screen" id="config" role="region" aria-label="Configuración">
+    <div class="header">
+      <button class="btn-icon" id="backFromConfig" aria-label="Volver" data-announce="Volver">&#x2190;</button>
+      <h1>&#x2699; Configuración</h1>
+      <div style="width:55px"></div>
+    </div>
+    <h2 class="section-title">&#x1F50A; Voz</h2>
+    <button class="btn-big" id="btnSlowVoice" data-announce="Voz lenta">&#x1F422; LENTA</button>
+    <button class="btn-big green" id="btnNormalVoice" data-announce="Voz normal">&#x1F6B6; NORMAL</button>
+    <button class="btn-big blue" id="btnFastVoice" data-announce="Voz rápida">&#x1F3C3; RÁPIDA</button>
+    <button class="back-btn" id="btnSaveConfig" data-announce="Volver al menú">VOLVER</button>
+  </div>
+
+</div>
+
+
+</body>
+</html>
